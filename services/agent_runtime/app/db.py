@@ -1,10 +1,16 @@
+import sys
+
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from .config import get_settings
 
 settings = get_settings()
-engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+_engine_kwargs: dict = {"pool_pre_ping": True}
+if "pytest" in sys.modules:
+    _engine_kwargs["poolclass"] = NullPool
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
 SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
 

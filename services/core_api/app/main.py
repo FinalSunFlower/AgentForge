@@ -7,6 +7,7 @@ import hmac
 import json
 import logging
 import secrets
+import sys
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
@@ -145,7 +146,10 @@ async def lifespan(_: FastAPI):
         await ensure_demo_corpus(session)
         await session.commit()
     yield
-    await engine.dispose()
+    # TestClient shutdown would otherwise dispose the process-wide engine while
+    # later tests still need it on a different event loop.
+    if "pytest" not in sys.modules:
+        await engine.dispose()
 
 
 app = FastAPI(title="AgentForge Core API", version="0.1.0", lifespan=lifespan)

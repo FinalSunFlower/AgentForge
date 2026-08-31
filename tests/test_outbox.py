@@ -11,7 +11,8 @@ from services.core_api.app.outbox import RedisNotConfigured, enqueue, relay_once
 
 
 @pytest.mark.asyncio
-async def test_outbox_enqueue_is_durable_without_redis() -> None:
+async def test_outbox_enqueue_is_durable_without_redis(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(get_settings(), "redis_url", None)
     await init_db()
     async with SessionFactory() as session:
         event = await enqueue(

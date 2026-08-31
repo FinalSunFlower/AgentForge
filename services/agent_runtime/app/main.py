@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import secrets
+import sys
 from contextlib import asynccontextmanager
 from uuid import UUID
 
@@ -29,7 +30,8 @@ _schedule_lock = asyncio.Lock()
 async def lifespan(_: FastAPI):
     await init_db()
     yield
-    await engine.dispose()
+    if "pytest" not in sys.modules:
+        await engine.dispose()
 
 
 app = FastAPI(title="AgentForge Agent Runtime", version="0.1.0", lifespan=lifespan)
