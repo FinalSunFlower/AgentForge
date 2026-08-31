@@ -29,7 +29,9 @@ def test_demo_corpus_is_seeded_for_retrieval() -> None:
             if paper is None:
                 return 0, 0
             sections = await session.scalar(
-                select(func.count()).select_from(PaperSection).where(PaperSection.paper_id == paper.id)
+                select(func.count())
+                .select_from(PaperSection)
+                .where(PaperSection.paper_id == paper.id)
             )
             return 1, int(sections or 0)
 

@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     # Grey "skipped" until a public URL exists. Do not run the script just to
     # exit 0 — that would paint the same green as a real pass.
-    if: ${{ vars.SMOKE_BASE_URL != '' || secrets.SMOKE_BASE_URL != '' }}
+    # Job `if` cannot read `secrets` (GitHub rejects the workflow file on push).
+    if: ${{ vars.SMOKE_BASE_URL != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
