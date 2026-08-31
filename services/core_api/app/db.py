@@ -1,9 +1,11 @@
+import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from sqlalchemy import event, inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from .config import get_settings
 
@@ -13,7 +15,12 @@ class Base(DeclarativeBase):
 
 
 settings = get_settings()
-engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+# pytest-asyncio and Starlette TestClient each own a loop. QueuePool connections
+# stay bound to the loop that created them, which shows up as "Event loop is closed".
+_engine_kwargs: dict = {"pool_pre_ping": True}
+if "pytest" in sys.modules:
+    _engine_kwargs["poolclass"] = NullPool
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
 SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
 
 
