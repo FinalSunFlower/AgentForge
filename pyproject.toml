@@ -60,3 +60,4 @@ known-first-party = ["services", "packages", "apps"]
 asyncio_mode = "auto"
 addopts = ["-p", "asyncio"]
 testpaths = ["tests"]
+pythonpath = ["."]

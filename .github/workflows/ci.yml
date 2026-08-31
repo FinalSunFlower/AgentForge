@@ -52,9 +52,9 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://agentforge:agentforge@localhost:5432/agentforge
           REDIS_URL: redis://localhost:6379/0
         run: |
-          pytest
+          python -m pytest
           python -m pip install -e academic
-          pytest academic/tests
+          python -m pytest academic/tests
       - name: Web build
         working-directory: apps/web
         run: |
