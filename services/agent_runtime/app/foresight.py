@@ -108,7 +108,9 @@ def simulate_arxiv(arguments: dict[str, Any]) -> ToolSimulation:
     try:
         payload = ArxivSearchInput.model_validate(arguments)
     except ValidationError as exc:
-        return ToolSimulation("arxiv_search", False, 1.0, "catalog_preview", {"error": str(exc)[:200]})
+        return ToolSimulation(
+            "arxiv_search", False, 1.0, "catalog_preview", {"error": str(exc)[:200]}
+        )
     query = payload.query.strip()
     return ToolSimulation(
         "arxiv_search",

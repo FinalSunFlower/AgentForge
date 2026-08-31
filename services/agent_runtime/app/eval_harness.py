@@ -51,13 +51,13 @@ def keyword_route(prompt: str) -> list[tuple[str, dict[str, Any]]]:
         return [("intent_router", {"text": prompt})]
     if _contains_any(prompt, ("select ", " sql", "sql ", "analytics")):
         return [("readonly_sql", {"query": "SELECT title FROM papers LIMIT 5"})]
-    if _contains_any(prompt, ("arxiv literature catalog", "literature catalog", "use the arxiv")) and not _contains_any(
-        prompt, ("search published", "retrieve", "find", "look up")
-    ):
+    if _contains_any(
+        prompt, ("arxiv literature catalog", "literature catalog", "use the arxiv")
+    ) and not _contains_any(prompt, ("search published", "retrieve", "find", "look up")):
         return [("arxiv_search", {"query": prompt[:200], "limit": 3})]
-    if _contains_any(prompt, ("plot", "polyline", "standard deviation", "numeric series")) and not _contains_any(
-        prompt, ("search", "retrieve", "find", "look up")
-    ):
+    if _contains_any(
+        prompt, ("plot", "polyline", "standard deviation", "numeric series")
+    ) and not _contains_any(prompt, ("search", "retrieve", "find", "look up")):
         return [
             (
                 "plot_generator",
@@ -176,7 +176,12 @@ EVAL_TASKS: list[EvalTask] = [
         ["retrieval"],
         {"retrieval": {}},
     ),
-    EvalTask("find-citation", "Find the extractive citation alignment section", ["retrieval"], {"retrieval": {}}),
+    EvalTask(
+        "find-citation",
+        "Find the extractive citation alignment section",
+        ["retrieval"],
+        {"retrieval": {}},
+    ),
     EvalTask(
         "find-arxiv-note",
         "Search the ReAct preprint interleaving note",
@@ -476,11 +481,12 @@ def run_hard_embedding_eval() -> tuple[list[TaskTrace], dict[str, Any]]:
 
 
 def supervisor_route(prompt: str) -> list[tuple[str, dict[str, Any]]]:
-    if _contains_any(
-        prompt, ("calculate", "compute", "plot", "sql", "series")
-    ):
+    if _contains_any(prompt, ("calculate", "compute", "plot", "sql", "series")):
         return [
-            ("handoff", {"specialist": "code_data", "reason": "code_data_task", "brief": prompt[:400]})
+            (
+                "handoff",
+                {"specialist": "code_data", "reason": "code_data_task", "brief": prompt[:400]},
+            )
         ]
     if _contains_any(prompt, ("search", "retrieve", "find", "look up", "who wrote")):
         return [

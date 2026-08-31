@@ -92,15 +92,11 @@ def _score_paper(query: str, paper: dict[str, str]) -> int:
 async def arxiv_search(arguments: dict[str, Any]) -> dict[str, Any]:
     payload = ArxivSearchInput.model_validate(arguments)
     ranked = sorted(
-        (( _score_paper(payload.query, paper), paper) for paper in _ARXIV_CATALOG),
+        ((_score_paper(payload.query, paper), paper) for paper in _ARXIV_CATALOG),
         key=lambda item: item[0],
         reverse=True,
     )
-    hits = [
-        {**paper, "score": score}
-        for score, paper in ranked
-        if score > 0
-    ][: payload.limit]
+    hits = [{**paper, "score": score} for score, paper in ranked if score > 0][: payload.limit]
     if not hits:
         hits = [{**paper, "score": 0} for paper in _ARXIV_CATALOG[: payload.limit]]
     return {

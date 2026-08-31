@@ -115,13 +115,9 @@ def select_tool_names(prompt: str) -> list[str]:
         if "retrieval" not in kept:
             kept.append("retrieval")
     kept = [
-        name
-        for name in kept
-        if name != "intent_router" or _contains_any(prompt, _INTENT_HINTS)
+        name for name in kept if name != "intent_router" or _contains_any(prompt, _INTENT_HINTS)
     ]
-    kept = [
-        name for name in kept if name != "handoff" or _contains_any(prompt, _HANDOFF_HINTS)
-    ]
+    kept = [name for name in kept if name != "handoff" or _contains_any(prompt, _HANDOFF_HINTS)]
     if top_name == "intent_router":
         margin = top_score - max(
             (score for name, score in scored if name != "intent_router"), default=0.0

@@ -14,9 +14,7 @@ async def test_arxiv_search_ranks_react_preprint() -> None:
 
 @pytest.mark.asyncio
 async def test_plot_generator_returns_closed_form_stats() -> None:
-    result = await plot_generator(
-        {"xs": [0.0, 1.0, 2.0], "ys": [1.0, 3.0, 5.0], "title": "linear"}
-    )
+    result = await plot_generator({"xs": [0.0, 1.0, 2.0], "ys": [1.0, 3.0, 5.0], "title": "linear"})
     assert result["n"] == 3
     assert result["mean"] == 3.0
     assert result["slope"] == 2.0

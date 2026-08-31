@@ -361,7 +361,10 @@ async def load_published_passages() -> list[Passage]:
                     PaperSection.is_published.is_(True),
                     PaperSection.visibility == "public",
                     Paper.status == "published",
-                    (PaperSection.publish_at.is_(None) | (PaperSection.publish_at <= datetime.now(UTC))),
+                    (
+                        PaperSection.publish_at.is_(None)
+                        | (PaperSection.publish_at <= datetime.now(UTC))
+                    ),
                 )
             )
         )
@@ -630,7 +633,11 @@ DISTRACTOR_CORPUS: list[Passage] = [
 
 
 HARD_QUERIES: list[dict[str, Any]] = [
-    {"query": "vendor checkpoints remain unbundled", "relevant": ["p-license"], "family": "zero_overlap"},
+    {
+        "query": "vendor checkpoints remain unbundled",
+        "relevant": ["p-license"],
+        "family": "zero_overlap",
+    },
     {"query": "yao style interleaved planner", "relevant": ["p-arxiv"], "family": "zero_overlap"},
     {
         "query": "leftover allowance each calendar day",
@@ -638,7 +645,11 @@ HARD_QUERIES: list[dict[str, Any]] = [
         "family": "zero_overlap",
     },
     {"query": "oss notice omits binaries", "relevant": ["p-license"], "family": "zero_overlap"},
-    {"query": "nested objectives become leaf actions", "relevant": ["p-planning"], "family": "zero_overlap"},
+    {
+        "query": "nested objectives become leaf actions",
+        "relevant": ["p-planning"],
+        "family": "zero_overlap",
+    },
     {"query": "quote grounded summary rule", "relevant": ["p-citation"], "family": "zero_overlap"},
 ]
 
@@ -667,7 +678,11 @@ EVAL_QUERIES: list[dict[str, Any]] = [
         "family": "semantic",
     },
     {"query": "cited passage_id", "relevant": ["p-citation"], "family": "lexical"},
-    {"query": "extractive abstracts aligned to citations", "relevant": ["p-citation"], "family": "semantic"},
+    {
+        "query": "extractive abstracts aligned to citations",
+        "relevant": ["p-citation"],
+        "family": "semantic",
+    },
     {"query": "quotas reset at 00:00 UTC", "relevant": ["p-quota"], "family": "lexical"},
     {
         "query": "Which ledger says unused credits never roll over?",

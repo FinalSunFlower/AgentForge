@@ -51,9 +51,7 @@ async def test_foresight_gate_uses_candidate_variance() -> None:
     assert denied.ok is False and denied.kind == "sql_validate"
     allowed = simulate_sql({"query": "SELECT title FROM papers LIMIT 5"})
     assert allowed.ok is True and allowed.predicted["would_execute"] is True
-    preview = simulate_retrieval(
-        {"query": "quote grounded summary rule", "limit": 3}, EVAL_CORPUS
-    )
+    preview = simulate_retrieval({"query": "quote grounded summary rule", "limit": 3}, EVAL_CORPUS)
     assert preview.ok is True and preview.kind == "vector_preview"
     assert preview.predicted["top_ids"]
     generic = simulate_tool("unknown_tool", {})
