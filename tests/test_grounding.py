@@ -12,7 +12,7 @@ def test_grounding_accepts_supported_sentence_and_flags_invention() -> None:
     )
     assert supported["grounded"] is True
     invented = check_grounding(
-        "The system silently trains a sparse MoE foundation model on user novels.",
+        "The system silently trains a sparse MoE foundation model on user papers.",
         passages,
     )
     assert invented["grounded"] is False

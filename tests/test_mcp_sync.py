@@ -100,7 +100,7 @@ def test_approved_mcp_tool_can_be_attached_to_an_agent(monkeypatch: pytest.Monke
         ).json()["created"][0]
         client.post(f"/v1/admin/tools/{created['id']}/approve", headers=headers)
         agents = client.get("/v1/agents").json()
-        assistant = next(row for row in agents if row["slug"] == "default-assistant")
+        assistant = next(row for row in agents if row["slug"] == "academic-writer")
         attached = client.post(
             f"/v1/admin/agents/{assistant['id']}/tools",
             headers=headers,

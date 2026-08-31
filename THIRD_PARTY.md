@@ -24,7 +24,8 @@ copies of the papers' code or figures. Citations live in
 `academic/README.md`.
 
 Figures under `figures/` and `academic/figures/` are original to this
-project.
+project. `figures/architecture.jpg` is an original diagram of this runtime,
+not a vendor or third-party screenshot.
 
 ## Runtime and console dependencies
 

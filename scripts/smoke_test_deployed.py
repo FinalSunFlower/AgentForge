@@ -70,7 +70,7 @@ def main() -> int:
 
         agents = client.get("/v1/agents").json()
         agent_id = next(
-            (row["id"] for row in agents if row.get("slug") == "default-assistant"), agents[0]["id"]
+            (row["id"] for row in agents if row.get("slug") == "academic-writer"), agents[0]["id"]
         )
         thread = client.post(
             "/v1/threads",

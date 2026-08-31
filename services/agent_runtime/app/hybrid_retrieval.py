@@ -348,29 +348,29 @@ async def load_published_passages() -> list[Passage]:
     from sqlalchemy import select
 
     from services.agent_runtime.app.db import SessionFactory
-    from services.core_api.app.models import Chapter, Novel
+    from services.core_api.app.models import Paper, PaperSection
 
     passages: list[Passage] = []
     async with SessionFactory() as session:
-        novels = list(await session.scalars(select(Novel).where(Novel.status == "published")))
-        chapters = list(
+        papers = list(await session.scalars(select(Paper).where(Paper.status == "published")))
+        sections = list(
             await session.scalars(
-                select(Chapter)
-                .join(Novel, Novel.id == Chapter.novel_id)
+                select(PaperSection)
+                .join(Paper, Paper.id == PaperSection.paper_id)
                 .where(
-                    Chapter.is_published.is_(True),
-                    Chapter.visibility == "public",
-                    Novel.status == "published",
-                    (Chapter.publish_at.is_(None) | (Chapter.publish_at <= datetime.now(UTC))),
+                    PaperSection.is_published.is_(True),
+                    PaperSection.visibility == "public",
+                    Paper.status == "published",
+                    (PaperSection.publish_at.is_(None) | (PaperSection.publish_at <= datetime.now(UTC))),
                 )
             )
         )
-    for novel in novels:
+    for paper in papers:
         passages.extend(
-            chunk_text(str(novel.id), "novel", novel.title, f"{novel.title}. {novel.description}")
+            chunk_text(str(paper.id), "paper", paper.title, f"{paper.title}. {paper.description}")
         )
-    for chapter in chapters:
-        passages.extend(chunk_text(str(chapter.id), "chapter", chapter.title, chapter.content))
+    for section in sections:
+        passages.extend(chunk_text(str(section.id), "section", section.title, section.content))
     return passages
 
 
@@ -541,133 +541,133 @@ EVAL_CORPUS: list[Passage] = [
     Passage(
         "p-planning",
         "src-planning",
-        "chapter",
+        "section",
         "Agent Planning Notes",
-        "Lira Chen published Agent Planning Notes after the monsoon delayed the caravan.",
+        "HTN planners recursively rewrite compound goals until only primitive operators remain.",
     ),
     Passage(
-        "p-sonar",
-        "src-sonar",
-        "chapter",
-        "Harbor Bearing Log",
-        "The lighthouse keeper recorded a bearing of forty-seven degrees from the north pier.",
+        "p-arxiv",
+        "src-arxiv",
+        "section",
+        "ReAct Preprint Note",
+        "The ReAct preprint shows interleaving thought traces with tool actions on knowledge tasks.",
     ),
     Passage(
-        "p-wind",
-        "src-wind",
-        "chapter",
-        "Aeolian Cylinder Notes",
-        "The aeolian cylinder experiment measured surface pressure under inviscid potential flow.",
+        "p-plot",
+        "src-plot",
+        "section",
+        "Series Plot Notes",
+        "A deterministic SVG polyline reports mean, standard deviation, and slope of a numeric series.",
     ),
     Passage(
-        "p-tea",
-        "src-tea",
-        "chapter",
-        "Amber Tea Ceremony",
-        "The amber tea ceremony uses roasted oolong and a clay pot warmed twice.",
+        "p-citation",
+        "src-citation",
+        "section",
+        "Citation Alignment",
+        "Extractive abstracts must keep every claim aligned to a cited passage_id.",
     ),
     Passage(
         "p-quota",
         "src-quota",
-        "chapter",
+        "section",
         "Quota Ledger",
         "Daily token quotas reset at 00:00 UTC and unused credits never roll over.",
     ),
     Passage(
         "p-untrusted",
         "src-untrusted",
-        "chapter",
+        "section",
         "Observation Boundary",
         "Retrieved passages are wrapped as untrusted data and must never become system policy.",
     ),
     Passage(
         "p-bm25",
         "src-bm25",
-        "chapter",
+        "section",
         "Lexical Ranking Primer",
         "Okapi BM25 ranks documents by term frequency saturated with k1 and length normalization b.",
     ),
     Passage(
         "p-rrf",
         "src-rrf",
-        "chapter",
+        "section",
         "Fusion Notes",
         "Reciprocal Rank Fusion adds 1/(k+rank) across lexical and dense result lists.",
     ),
     Passage(
-        "p-refund",
-        "src-refund",
-        "chapter",
-        "Billing Portal",
-        "Customers may reverse a completed checkout from the billing portal within seven days.",
+        "p-license",
+        "src-license",
+        "section",
+        "Attribution Note",
+        "Third-party model cards stay Apache-2.0; this repository redistributes no weight files.",
     ),
 ]
 
 
 DISTRACTOR_CORPUS: list[Passage] = [
     Passage(
-        "p-monsoon-rain",
+        "p-rainfall-gauge",
         "src-weather",
-        "chapter",
+        "section",
         "Rainfall Ledger",
-        "The monsoon rainfall ledger lists millimetres collected at the upland gauge.",
+        "The rainfall ledger lists millimetres collected at the upland gauge.",
     ),
     Passage(
-        "p-kettle",
-        "src-kettle",
-        "chapter",
-        "Kettle Log",
-        "The kettle was heated to forty-seven degrees celsius before the leaves were added.",
+        "p-polyline-color",
+        "src-svg",
+        "section",
+        "Stroke Log",
+        "The chart stroke used a blue hex value and was not a retrieval citation.",
     ),
     Passage(
-        "p-river",
-        "src-river",
-        "chapter",
-        "River Notes",
-        "Surveyors measured potential along the flood reach, not a cylinder in a tunnel.",
+        "p-thought-only",
+        "src-trace",
+        "section",
+        "Trace Notes",
+        "A thought trace without a tool call is not a published preprint abstract.",
     ),
 ]
 
 
 HARD_QUERIES: list[dict[str, Any]] = [
-    {"query": "undo purchase", "relevant": ["p-refund"], "family": "zero_overlap"},
-    {"query": "observer angle measurement", "relevant": ["p-sonar"], "family": "zero_overlap"},
+    {"query": "vendor checkpoints remain unbundled", "relevant": ["p-license"], "family": "zero_overlap"},
+    {"query": "yao style interleaved planner", "relevant": ["p-arxiv"], "family": "zero_overlap"},
     {
         "query": "leftover allowance each calendar day",
         "relevant": ["p-quota"],
         "family": "zero_overlap",
     },
-    {"query": "void finished store order", "relevant": ["p-refund"], "family": "zero_overlap"},
-    {"query": "who held up trade wagons", "relevant": ["p-planning"], "family": "zero_overlap"},
-    {"query": "steeped leaves teapot", "relevant": ["p-tea"], "family": "zero_overlap"},
+    {"query": "oss notice omits binaries", "relevant": ["p-license"], "family": "zero_overlap"},
+    {"query": "nested objectives become leaf actions", "relevant": ["p-planning"], "family": "zero_overlap"},
+    {"query": "quote grounded summary rule", "relevant": ["p-citation"], "family": "zero_overlap"},
 ]
 
 
 EVAL_QUERIES: list[dict[str, Any]] = [
-    {"query": "monsoon delayed the caravan", "relevant": ["p-planning"], "family": "lexical"},
+    {"query": "HTN planners recursively rewrite", "relevant": ["p-planning"], "family": "lexical"},
     {
-        "query": "Which notes mention the monsoon delay of the caravan?",
+        "query": "Which notes describe rewriting compound goals as primitive operators?",
         "relevant": ["p-planning"],
         "family": "semantic",
     },
     {
-        "query": "forty-seven degrees from the north pier",
-        "relevant": ["p-sonar"],
+        "query": "interleaving thought traces with tool actions",
+        "relevant": ["p-arxiv"],
         "family": "lexical",
     },
     {
-        "query": "What bearing did the pier observer record?",
-        "relevant": ["p-sonar"],
+        "query": "Which note describes ReAct thought traces and tools?",
+        "relevant": ["p-arxiv"],
         "family": "semantic",
     },
-    {"query": "inviscid potential flow", "relevant": ["p-wind"], "family": "lexical"},
+    {"query": "deterministic SVG polyline", "relevant": ["p-plot"], "family": "lexical"},
     {
-        "query": "Which notes mention cylinder surface pressure in potential flow?",
-        "relevant": ["p-wind"],
+        "query": "Which notes mention mean and slope of a numeric series?",
+        "relevant": ["p-plot"],
         "family": "semantic",
     },
-    {"query": "amber tea ceremony", "relevant": ["p-tea"], "family": "lexical"},
-    {"query": "roasted oolong clay pot", "relevant": ["p-tea"], "family": "semantic"},
+    {"query": "cited passage_id", "relevant": ["p-citation"], "family": "lexical"},
+    {"query": "extractive abstracts aligned to citations", "relevant": ["p-citation"], "family": "semantic"},
     {"query": "quotas reset at 00:00 UTC", "relevant": ["p-quota"], "family": "lexical"},
     {
         "query": "Which ledger says unused credits never roll over?",
@@ -696,8 +696,8 @@ EVAL_QUERIES: list[dict[str, Any]] = [
         "relevant": ["p-rrf"],
         "family": "semantic",
     },
-    {"query": "undo purchase", "relevant": ["p-refund"], "family": "zero_overlap"},
-    {"query": "observer angle measurement", "relevant": ["p-sonar"], "family": "zero_overlap"},
+    {"query": "quote grounded summary rule", "relevant": ["p-citation"], "family": "zero_overlap"},
+    {"query": "yao style interleaved planner", "relevant": ["p-arxiv"], "family": "zero_overlap"},
     {
         "query": "leftover allowance each calendar day",
         "relevant": ["p-quota"],

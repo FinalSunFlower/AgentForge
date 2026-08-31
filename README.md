@@ -1,4 +1,4 @@
-> **You are on the cademic branch.** This landing page is the CPU-only ToolWorld-v1 study. The product runtime, console, and measured product evals are on the main branch.
+> **You are on the `academic` branch.** This landing page is the CPU-only ToolWorld-v1 study. The product runtime, console, and measured product evals are on the `main` branch.
 
 # AgentForge Academic Branch
 
@@ -7,8 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Routed lightweight world models for tool-augmented agent planning.
-Parent product: [../README.md](../README.md). On GitHub, switch to the
-`academic` branch to see this write-up as the repository landing page.
+Parent product: switch to the [`main`](https://github.com/FinalSunFlower/agentforge/tree/main) branch. This `academic` branch uses the study write-up as the repository landing page.
 Product tables named
 `WorldModel` and the product runtime `tool.foresight` event (a cheap
 tool-outcome simulator: AST / retrieval preview / SQL validate) are **not**
@@ -31,7 +30,8 @@ ScienceWorld, τ-bench, LoRA, and an LLM controller are out of scope.
 | Tests | pytest 8 | 28 cases; never download Hugging Face weights |
 | Optional extra | `pip install -e ".[llm]"` + CUDA or CPU torch | Frozen inference only |
 
-There is no LoRA, no training loop, no W&B, and no ALFWorld dependency.
+The default extra is CPU tabular experts. LoRA, a training loop, W&B, and
+official ALFWorld are outside this package.
 
 ## Package layout
 

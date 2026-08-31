@@ -8,7 +8,7 @@ from typing import Any, Protocol
 from pydantic import ValidationError
 
 from .hybrid_retrieval import RetrievalTrace, retrieve_detailed
-from .science_tools import SonarInput, SQLAnalyticsInput, _least_squares
+from .research_tools import ArxivSearchInput, PlotInput, SQLAnalyticsInput
 from .tools import ToolError, _evaluate
 
 
@@ -104,57 +104,34 @@ def simulate_sql(arguments: dict[str, Any]) -> ToolSimulation:
     )
 
 
-def simulate_sonar(arguments: dict[str, Any]) -> ToolSimulation:
+def simulate_arxiv(arguments: dict[str, Any]) -> ToolSimulation:
     try:
-        payload = SonarInput.model_validate(arguments)
-        x, y, residual = _least_squares(payload.sensors)
-    except (ToolError, ValidationError, ValueError) as exc:
-        return ToolSimulation("passive_sonar", False, 1.0, "closed_form", {"error": str(exc)[:200]})
+        payload = ArxivSearchInput.model_validate(arguments)
+    except ValidationError as exc:
+        return ToolSimulation("arxiv_search", False, 1.0, "catalog_preview", {"error": str(exc)[:200]})
+    query = payload.query.strip()
     return ToolSimulation(
-        "passive_sonar",
+        "arxiv_search",
         True,
-        1.0,
-        "closed_form",
-        {
-            "source_x": round(x, 6),
-            "source_y": round(y, 6),
-            "rms_bearing_residual": round(residual, 6),
-        },
+        0.8,
+        "catalog_preview",
+        {"would_search": True, "query": query, "limit": payload.limit},
     )
 
 
-def simulate_wind_tunnel(arguments: dict[str, Any]) -> ToolSimulation:
-    grid = int(arguments.get("grid_size") or 25)
-    velocity = arguments.get("velocity_mps")
-    if velocity is None:
-        return ToolSimulation(
-            "wind_tunnel", False, 0.9, "closed_form_estimate", {"error": "missing_velocity"}
-        )
+def simulate_plot(arguments: dict[str, Any]) -> ToolSimulation:
     try:
-        if float(velocity) <= 0:
-            return ToolSimulation(
-                "wind_tunnel",
-                False,
-                1.0,
-                "closed_form_estimate",
-                {"error": "non_positive_velocity"},
-            )
-    except (TypeError, ValueError):
+        payload = PlotInput.model_validate(arguments)
+    except ValidationError as exc:
         return ToolSimulation(
-            "wind_tunnel", False, 1.0, "closed_form_estimate", {"error": "invalid_velocity"}
+            "plot_generator", False, 1.0, "closed_form_estimate", {"error": str(exc)[:200]}
         )
-    points = max(1, grid * grid)
     return ToolSimulation(
-        "wind_tunnel",
+        "plot_generator",
         True,
-        0.7,
+        1.0,
         "closed_form_estimate",
-        {
-            "would_run": True,
-            "grid_points": points,
-            "lift_coefficient": 0.0,
-            "drag_coefficient": 0.0,
-        },
+        {"n": len(payload.ys), "title": payload.title},
     )
 
 
@@ -192,10 +169,10 @@ def simulate_tool(
         return simulate_calculator(arguments)
     if name == "readonly_sql":
         return simulate_sql(arguments)
-    if name == "passive_sonar":
-        return simulate_sonar(arguments)
-    if name == "wind_tunnel":
-        return simulate_wind_tunnel(arguments)
+    if name == "arxiv_search":
+        return simulate_arxiv(arguments)
+    if name == "plot_generator":
+        return simulate_plot(arguments)
     if name == "retrieval":
         if retrieval_trace is not None and passages is None:
             return ToolSimulation(

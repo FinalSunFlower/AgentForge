@@ -3,9 +3,9 @@ from sqlalchemy import func, select
 
 from services.core_api.app.db import SessionFactory
 from services.core_api.app.main import app
-from services.core_api.app.models import Chapter, Novel
+from services.core_api.app.models import Paper, PaperSection
 from services.core_api.app.routers.evals import load_evals_snapshot
-from services.core_api.app.seed import DEMO_NOVEL_TITLE
+from services.core_api.app.seed import DEMO_PAPER_TITLE
 
 
 def test_public_status_never_leaks_secrets() -> None:
@@ -25,19 +25,19 @@ def test_demo_corpus_is_seeded_for_retrieval() -> None:
 
     async def count_rows() -> tuple[int, int]:
         async with SessionFactory() as session:
-            novel = await session.scalar(select(Novel).where(Novel.title == DEMO_NOVEL_TITLE))
-            if novel is None:
+            paper = await session.scalar(select(Paper).where(Paper.title == DEMO_PAPER_TITLE))
+            if paper is None:
                 return 0, 0
-            chapters = await session.scalar(
-                select(func.count()).select_from(Chapter).where(Chapter.novel_id == novel.id)
+            sections = await session.scalar(
+                select(func.count()).select_from(PaperSection).where(PaperSection.paper_id == paper.id)
             )
-            return 1, int(chapters or 0)
+            return 1, int(sections or 0)
 
     with TestClient(app) as client:
         assert client.get("/v1/status").status_code == 200
-        novels, chapters = asyncio.run(count_rows())
-    assert novels == 1
-    assert chapters >= 9
+        papers, sections = asyncio.run(count_rows())
+    assert papers == 1
+    assert sections >= 9
 
 
 def test_evals_summary_serves_checked_in_snapshot() -> None:

@@ -130,30 +130,6 @@ class AgentCapability(BaseEntity):
     __table_args__ = (UniqueConstraint("agent_id", "capability", name="uq_agent_capability"),)
 
 
-class VirtualSinger(BaseEntity):
-    __tablename__ = "virtual_singers"
-
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    persona_version: Mapped[str] = mapped_column(String(40))
-    voice_provider: Mapped[str] = mapped_column(String(80))
-    safety_policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
-
-
-class MediaAsset(BaseEntity):
-    __tablename__ = "media_assets"
-
-    owner_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    kind: Mapped[str] = mapped_column(String(40))
-    object_key: Mapped[str] = mapped_column(String(500), unique=True)
-    mime_type: Mapped[str] = mapped_column(String(120))
-    checksum: Mapped[str] = mapped_column(String(128), index=True)
-    status: Mapped[str] = mapped_column(String(24), default="pending", index=True)
-
-
 class Thread(BaseEntity):
     __tablename__ = "threads"
 
@@ -289,23 +265,23 @@ class OutboxEvent(BaseEntity):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-class Novel(BaseEntity):
-    __tablename__ = "novels"
+class Paper(BaseEntity):
+    __tablename__ = "papers"
 
     title: Mapped[str] = mapped_column(String(200))
     author_name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(32), default="published", index=True)
-    chapters: Mapped[list[Chapter]] = relationship(
-        back_populates="novel", cascade="all, delete-orphan"
+    sections: Mapped[list[PaperSection]] = relationship(
+        back_populates="paper", cascade="all, delete-orphan"
     )
 
 
-class Chapter(BaseEntity):
-    __tablename__ = "chapters"
+class PaperSection(BaseEntity):
+    __tablename__ = "paper_sections"
 
-    novel_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("novels.id", ondelete="CASCADE"), index=True
+    paper_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("papers.id", ondelete="CASCADE"), index=True
     )
     number: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String(200))
@@ -314,43 +290,43 @@ class Chapter(BaseEntity):
     visibility: Mapped[str] = mapped_column(String(16), default="public", index=True)
     is_published: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     publish_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    novel: Mapped[Novel] = relationship(back_populates="chapters")
-    __table_args__ = (UniqueConstraint("novel_id", "number", name="uq_chapter_number"),)
+    paper: Mapped[Paper] = relationship(back_populates="sections")
+    __table_args__ = (UniqueConstraint("paper_id", "number", name="uq_section_number"),)
 
 
-class BookshelfEntry(BaseEntity):
-    __tablename__ = "bookshelf_entries"
-
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    novel_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("novels.id", ondelete="CASCADE"), index=True
-    )
-    __table_args__ = (UniqueConstraint("user_id", "novel_id", name="uq_bookshelf_user_novel"),)
-
-
-class ReadingProgress(BaseEntity):
-    __tablename__ = "reading_progress"
+class CollectionEntry(BaseEntity):
+    __tablename__ = "collection_entries"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
-    novel_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("novels.id", ondelete="CASCADE"), index=True
+    paper_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("papers.id", ondelete="CASCADE"), index=True
     )
-    chapter_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chapters.id"))
-    chapter_number: Mapped[int] = mapped_column(Integer)
+    __table_args__ = (UniqueConstraint("user_id", "paper_id", name="uq_collection_user_paper"),)
+
+
+class AnnotationSync(BaseEntity):
+    __tablename__ = "annotation_sync"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    paper_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("papers.id", ondelete="CASCADE"), index=True
+    )
+    section_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper_sections.id"))
+    section_number: Mapped[int] = mapped_column(Integer)
     progress_percent: Mapped[int] = mapped_column(Integer)
     paragraph_index: Mapped[int] = mapped_column(Integer, default=0)
     client_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     __table_args__ = (
-        UniqueConstraint("user_id", "novel_id", name="uq_progress_user_novel"),
+        UniqueConstraint("user_id", "paper_id", name="uq_annotation_user_paper"),
         CheckConstraint(
             "progress_percent >= 0 AND progress_percent <= 100", name="ck_progress_percent"
         ),
-        CheckConstraint("chapter_number >= 1", name="ck_progress_chapter_number"),
+        CheckConstraint("section_number >= 1", name="ck_annotation_section_number"),
     )
 
 
@@ -397,20 +373,20 @@ class UsageDaily(BaseEntity):
     __table_args__ = (UniqueConstraint("user_id", "day", name="uq_usage_daily_user_day"),)
 
 
-class OrderStatus(StrEnum):
+class ReservationStatus(StrEnum):
     CREATED = "created"
-    AWAITING_PAYMENT = "awaiting_payment"
-    PAID = "paid"
-    FULFILLING = "fulfilling"
-    FULFILLED = "fulfilled"
+    AWAITING_CONFIRM = "awaiting_confirm"
+    CONFIRMED = "confirmed"
+    GRANTING = "granting"
+    GRANTED = "granted"
     FAILED = "failed"
     CANCELED = "canceled"
     EXPIRED = "expired"
-    REFUNDED = "refunded"
+    REVERSED = "reversed"
 
 
-class Order(BaseEntity):
-    __tablename__ = "orders"
+class QuotaReservation(BaseEntity):
+    __tablename__ = "quota_reservations"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
@@ -418,23 +394,23 @@ class Order(BaseEntity):
     type: Mapped[str] = mapped_column(String(32))
     product_ref: Mapped[str] = mapped_column(String(100))
     amount: Mapped[int] = mapped_column(Integer)
-    currency: Mapped[str] = mapped_column(String(3), default="usd")
-    status: Mapped[OrderStatus] = mapped_column(
-        Enum(OrderStatus), default=OrderStatus.CREATED, index=True
+    unit: Mapped[str] = mapped_column(String(16), default="token")
+    status: Mapped[ReservationStatus] = mapped_column(
+        Enum(ReservationStatus), default=ReservationStatus.CREATED, index=True
     )
     idempotency_key: Mapped[str] = mapped_column(String(200), unique=True, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    __table_args__ = (CheckConstraint("amount > 0", name="ck_order_amount_positive"),)
+    __table_args__ = (CheckConstraint("amount > 0", name="ck_reservation_amount_positive"),)
 
 
-class PaymentTransaction(BaseEntity):
-    __tablename__ = "payment_transactions"
+class QuotaGrantAttempt(BaseEntity):
+    __tablename__ = "quota_grant_attempts"
 
-    order_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    reservation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("quota_reservations.id", ondelete="CASCADE"), index=True
     )
     provider: Mapped[str] = mapped_column(String(32))
-    provider_tx_id: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
+    provider_ref: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     raw_ref: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
@@ -459,11 +435,13 @@ class Entitlement(BaseEntity):
     status: Mapped[str] = mapped_column(String(24), default="active")
     period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"), unique=True)
+    reservation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("quota_reservations.id"), unique=True
+    )
 
 
-class CreditLedger(BaseEntity):
-    __tablename__ = "credit_ledger"
+class TokenLedger(BaseEntity):
+    __tablename__ = "token_ledger"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
@@ -471,7 +449,9 @@ class CreditLedger(BaseEntity):
     delta: Mapped[int] = mapped_column(Integer)
     balance_after: Mapped[int] = mapped_column(Integer)
     reason: Mapped[str] = mapped_column(String(120))
-    order_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
+    reservation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("quota_reservations.id"), nullable=True
+    )
     idempotency_key: Mapped[str] = mapped_column(String(200), unique=True, index=True)
 
 

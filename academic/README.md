@@ -29,7 +29,8 @@ ScienceWorld, τ-bench, LoRA, and an LLM controller are out of scope.
 | Tests | pytest 8 | 28 cases; never download Hugging Face weights |
 | Optional extra | `pip install -e ".[llm]"` + CUDA or CPU torch | Frozen inference only |
 
-There is no LoRA, no training loop, no W&B, and no ALFWorld dependency.
+The default extra is CPU tabular experts. LoRA, a training loop, W&B, and
+official ALFWorld are outside this package.
 
 ## Package layout
 

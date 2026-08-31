@@ -47,31 +47,31 @@ from .feed_ranking import deduplicate_brigading, ranking_score
 from .models import (
     Agent,
     AgentTool,
+    AnnotationSync,
     ApiKey,
     AuditLog,
-    BookshelfEntry,
-    Chapter,
+    CollectionEntry,
     Comment,
     ContentImpression,
-    CreditLedger,
     Entitlement,
     Follow,
     Message,
     MessageRole,
     Notification,
-    Novel,
-    Order,
-    OrderStatus,
-    PaymentTransaction,
+    Paper,
+    PaperSection,
     Post,
     PostLike,
     PushDelivery,
     PushDevice,
-    ReadingProgress,
+    QuotaGrantAttempt,
+    QuotaReservation,
     RegisteredTool,
+    ReservationStatus,
     Run,
     RunStatus,
     Thread,
+    TokenLedger,
     User,
     UserSession,
     WebhookEvent,
@@ -85,13 +85,12 @@ from .routers.evals import router as evals_router
 from .schemas import (
     AgentRead,
     AgentToolAttach,
+    AnnotationSyncRead,
+    AnnotationSyncUpdate,
     ApiKeyCreate,
     ApiKeyCreated,
     ApiKeyRead,
-    BookshelfRead,
-    ChapterCreate,
-    ChapterRead,
-    CheckoutRequest,
+    CollectionRead,
     CommentCreate,
     CommentRead,
     EntitlementRead,
@@ -102,18 +101,19 @@ from .schemas import (
     NotificationCreate,
     NotificationPreferenceUpdate,
     NotificationRead,
-    NovelCreate,
-    NovelRead,
-    OrderRead,
+    PaperCreate,
+    PaperRead,
     PostCreate,
     PostRead,
     PushDeviceCreate,
-    ReadingProgressRead,
-    ReadingProgressUpdate,
+    QuotaGrantRequest,
     RefreshRequest,
     RegisterRequest,
+    ReservationRead,
     RunCreate,
     RunRead,
+    SectionCreate,
+    SectionRead,
     ThreadCreate,
     ThreadDetail,
     ThreadRead,
@@ -122,7 +122,7 @@ from .schemas import (
     ToolRegistrationRead,
     UserCreate,
     UserRead,
-    WebhookPayment,
+    WebhookQuotaGrant,
 )
 from .seed import (
     ensure_builtin_tools,
@@ -610,86 +610,86 @@ async def feed(
     return [PostRead.model_validate(post, from_attributes=True) for post in selected]
 
 
-@app.post("/v1/novels", response_model=NovelRead, status_code=status.HTTP_201_CREATED)
-async def create_novel(
-    payload: NovelCreate,
+@app.post("/v1/papers", response_model=PaperRead, status_code=status.HTTP_201_CREATED)
+async def create_paper(
+    payload: PaperCreate,
     session: AsyncSession = Depends(get_session),  # noqa: B008
     _: User = Depends(current_user),  # noqa: B008
-) -> NovelRead:
-    novel = Novel(
+) -> PaperRead:
+    paper = Paper(
         title=payload.title, author_name=payload.author_name, description=payload.description
     )
-    session.add(novel)
+    session.add(paper)
     await session.commit()
-    await session.refresh(novel)
-    return NovelRead.model_validate(novel, from_attributes=True)
+    await session.refresh(paper)
+    return PaperRead.model_validate(paper, from_attributes=True)
 
 
-@app.get("/v1/novels/{novel_id}", response_model=NovelRead)
-async def get_novel(novel_id: UUID, session: AsyncSession = Depends(get_session)) -> NovelRead:  # noqa: B008
-    novel = await session.get(Novel, novel_id)
-    if novel is None or novel.status != "published":
-        raise HTTPException(status_code=404, detail="novel_not_found")
-    return NovelRead.model_validate(novel, from_attributes=True)
+@app.get("/v1/papers/{paper_id}", response_model=PaperRead)
+async def get_paper(paper_id: UUID, session: AsyncSession = Depends(get_session)) -> PaperRead:  # noqa: B008
+    paper = await session.get(Paper, paper_id)
+    if paper is None or paper.status != "published":
+        raise HTTPException(status_code=404, detail="paper_not_found")
+    return PaperRead.model_validate(paper, from_attributes=True)
 
 
 @app.post(
-    "/v1/novels/{novel_id}/chapters",
-    response_model=ChapterRead,
+    "/v1/papers/{paper_id}/sections",
+    response_model=SectionRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_chapter(
-    novel_id: UUID,
-    payload: ChapterCreate,
+async def create_section(
+    paper_id: UUID,
+    payload: SectionCreate,
     session: AsyncSession = Depends(get_session),  # noqa: B008
     _: User = Depends(current_user),  # noqa: B008
-) -> ChapterRead:
-    if await session.get(Novel, novel_id) is None:
-        raise HTTPException(status_code=404, detail="novel_not_found")
-    chapter = Chapter(
-        novel_id=novel_id,
+) -> SectionRead:
+    if await session.get(Paper, paper_id) is None:
+        raise HTTPException(status_code=404, detail="paper_not_found")
+    section = PaperSection(
+        paper_id=paper_id,
         number=payload.number,
         title=payload.title,
         content=payload.content,
         is_published=payload.is_published,
         publish_at=payload.publish_at,
     )
-    session.add(chapter)
+    session.add(section)
     try:
         await session.flush()
         await enqueue(
             session,
-            aggregate_type="chapter",
-            aggregate_id=str(chapter.id),
-            event_type="chapter.published" if chapter.is_published else "chapter.created",
-            payload={"novel_id": str(novel_id), "chapter_id": str(chapter.id)},
+            aggregate_type="section",
+            aggregate_id=str(section.id),
+            event_type="section.published" if section.is_published else "section.created",
+            payload={"paper_id": str(paper_id), "section_id": str(section.id)},
         )
         await session.commit()
     except Exception as exc:
         await session.rollback()
         if "UNIQUE" in str(exc).upper() or "unique" in str(exc):
-            raise HTTPException(status_code=409, detail="chapter_number_exists") from exc
+            raise HTTPException(status_code=409, detail="section_number_exists") from exc
         raise
-    await session.refresh(chapter)
-    return ChapterRead.model_validate(chapter, from_attributes=True)
+    await session.refresh(section)
+    return SectionRead.model_validate(section, from_attributes=True)
 
 
-@app.get("/v1/novels/{novel_id}/chapters", response_model=list[ChapterRead])
-async def list_chapters(
-    novel_id: UUID, session: AsyncSession = Depends(get_session)
-) -> list[ChapterRead]:  # noqa: B008
-    novel = await session.get(Novel, novel_id)
-    if novel is None or novel.status != "published":
-        raise HTTPException(status_code=404, detail="novel_not_found")
+@app.get("/v1/papers/{paper_id}/sections", response_model=list[SectionRead])
+async def list_sections(
+    paper_id: UUID, session: AsyncSession = Depends(get_session)
+) -> list[SectionRead]:  # noqa: B008
+    paper = await session.get(Paper, paper_id)
+    if paper is None or paper.status != "published":
+        raise HTTPException(status_code=404, detail="paper_not_found")
     rows = list(
         await session.scalars(
-            select(Chapter)
+            select(PaperSection)
             .where(
-                Chapter.novel_id == novel_id,
-                Chapter.is_published.is_(True),
-                Chapter.visibility == "public",
+                PaperSection.paper_id == paper_id,
+                PaperSection.is_published.is_(True),
+                PaperSection.visibility == "public",
             )
-            .order_by(Chapter.number)
+            .order_by(PaperSection.number)
         )
     )
     now = datetime.now(UTC)
@@ -701,75 +701,75 @@ async def list_chapters(
                 publish_at = publish_at.replace(tzinfo=UTC)
             if publish_at > now:
                 continue
-        visible.append(ChapterRead.model_validate(row, from_attributes=True))
+        visible.append(SectionRead.model_validate(row, from_attributes=True))
     return visible
 
 
-@app.post("/v1/bookshelf/{novel_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def add_to_bookshelf(
-    novel_id: UUID,
+@app.post("/v1/collections/{paper_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def add_to_collection(
+    paper_id: UUID,
     session: AsyncSession = Depends(get_session),  # noqa: B008
     user: User = Depends(current_user),  # noqa: B008
 ) -> None:
-    novel = await session.get(Novel, novel_id)
-    if novel is None or novel.status != "published":
-        raise HTTPException(status_code=404, detail="novel_not_found")
+    paper = await session.get(Paper, paper_id)
+    if paper is None or paper.status != "published":
+        raise HTTPException(status_code=404, detail="paper_not_found")
     existing = await session.scalar(
-        select(BookshelfEntry).where(
-            BookshelfEntry.user_id == user.id, BookshelfEntry.novel_id == novel_id
+        select(CollectionEntry).where(
+            CollectionEntry.user_id == user.id, CollectionEntry.paper_id == paper_id
         )
     )
     if existing is None:
-        session.add(BookshelfEntry(user_id=user.id, novel_id=novel_id))
+        session.add(CollectionEntry(user_id=user.id, paper_id=paper_id))
         await session.commit()
 
 
-@app.get("/v1/bookshelf", response_model=list[BookshelfRead])
-async def list_bookshelf(
+@app.get("/v1/collections", response_model=list[CollectionRead])
+async def list_collections(
     session: AsyncSession = Depends(get_session), user: User = Depends(current_user)
-) -> list[BookshelfRead]:  # noqa: B008
+) -> list[CollectionRead]:  # noqa: B008
     rows = list(
         await session.scalars(
-            select(BookshelfEntry)
-            .join(Novel, Novel.id == BookshelfEntry.novel_id)
-            .where(BookshelfEntry.user_id == user.id, Novel.status == "published")
-            .order_by(BookshelfEntry.created_at.desc())
+            select(CollectionEntry)
+            .join(Paper, Paper.id == CollectionEntry.paper_id)
+            .where(CollectionEntry.user_id == user.id, Paper.status == "published")
+            .order_by(CollectionEntry.created_at.desc())
         )
     )
-    return [BookshelfRead(novel_id=row.novel_id, created_at=row.created_at) for row in rows]
+    return [CollectionRead(paper_id=row.paper_id, created_at=row.created_at) for row in rows]
 
 
-@app.put("/v1/novels/{novel_id}/reading-progress", response_model=ReadingProgressRead)
-async def update_reading_progress(
-    novel_id: UUID,
-    payload: ReadingProgressUpdate,
+@app.put("/v1/papers/{paper_id}/annotation-sync", response_model=AnnotationSyncRead)
+async def update_annotation_sync(
+    paper_id: UUID,
+    payload: AnnotationSyncUpdate,
     session: AsyncSession = Depends(get_session),  # noqa: B008
     user: User = Depends(current_user),  # noqa: B008
-) -> ReadingProgressRead:
-    novel = await session.get(Novel, novel_id)
-    if novel is None or novel.status != "published":
-        raise HTTPException(status_code=404, detail="novel_not_found")
-    chapter = await session.get(Chapter, payload.chapter_id)
+) -> AnnotationSyncRead:
+    paper = await session.get(Paper, paper_id)
+    if paper is None or paper.status != "published":
+        raise HTTPException(status_code=404, detail="paper_not_found")
+    section = await session.get(PaperSection, payload.section_id)
     if (
-        chapter is None
-        or chapter.novel_id != novel_id
-        or not chapter.is_published
-        or chapter.visibility != "public"
+        section is None
+        or section.paper_id != paper_id
+        or not section.is_published
+        or section.visibility != "public"
     ):
-        raise HTTPException(status_code=400, detail="chapter_not_readable")
-    publish_at = chapter.publish_at
+        raise HTTPException(status_code=400, detail="section_not_readable")
+    publish_at = section.publish_at
     if publish_at is not None:
         if publish_at.tzinfo is None:
             publish_at = publish_at.replace(tzinfo=UTC)
         if publish_at > datetime.now(UTC):
-            raise HTTPException(status_code=400, detail="chapter_not_readable")
-    if payload.chapter_number != chapter.number:
-        raise HTTPException(status_code=400, detail="chapter_number_mismatch")
+            raise HTTPException(status_code=400, detail="section_not_readable")
+    if payload.section_number != section.number:
+        raise HTTPException(status_code=400, detail="section_number_mismatch")
     dialect = session.bind.dialect.name if session.bind is not None else ""
     if dialect == "sqlite":
         await session.execute(text("BEGIN IMMEDIATE"))
-    progress_query = select(ReadingProgress).where(
-        ReadingProgress.user_id == user.id, ReadingProgress.novel_id == novel_id
+    progress_query = select(AnnotationSync).where(
+        AnnotationSync.user_id == user.id, AnnotationSync.paper_id == paper_id
     )
     if dialect == "postgresql":
         progress_query = progress_query.with_for_update()
@@ -784,36 +784,36 @@ async def update_reading_progress(
     if current is not None:
         if current_time is not None and current_time > incoming_time:
             stale_reason = "client_timestamp_older"
-        elif payload.chapter_number < current.chapter_number:
-            stale_reason = "chapter_regression"
+        elif payload.section_number < current.section_number:
+            stale_reason = "section_regression"
         elif payload.progress_percent < current.progress_percent:
             stale_reason = "progress_regression"
         elif payload.paragraph_index < current.paragraph_index:
             stale_reason = "paragraph_regression"
     if stale_reason:
         assert current is not None
-        return ReadingProgressRead(
+        return AnnotationSyncRead(
             accepted=False,
             stale_reason=stale_reason,
-            chapter_id=current.chapter_id,
-            chapter_number=current.chapter_number,
+            section_id=current.section_id,
+            section_number=current.section_number,
             progress_percent=current.progress_percent,
             paragraph_index=current.paragraph_index,
         )
     if current is None:
-        current = ReadingProgress(
+        current = AnnotationSync(
             user_id=user.id,
-            novel_id=novel_id,
-            chapter_id=chapter.id,
-            chapter_number=payload.chapter_number,
+            paper_id=paper_id,
+            section_id=section.id,
+            section_number=payload.section_number,
             progress_percent=payload.progress_percent,
             paragraph_index=payload.paragraph_index,
             client_updated_at=incoming_time,
         )
         session.add(current)
     else:
-        current.chapter_id = chapter.id
-        current.chapter_number = payload.chapter_number
+        current.section_id = section.id
+        current.section_number = payload.section_number
         current.progress_percent = payload.progress_percent
         current.paragraph_index = payload.paragraph_index
         current.client_updated_at = incoming_time
@@ -833,65 +833,70 @@ async def update_reading_progress(
             current_time = current_time.replace(tzinfo=UTC)
         if current_time is not None and current_time > incoming_time:
             retry_stale = "client_timestamp_older"
-        elif payload.chapter_number < current.chapter_number:
-            retry_stale = "chapter_regression"
+        elif payload.section_number < current.section_number:
+            retry_stale = "section_regression"
         elif payload.progress_percent < current.progress_percent:
             retry_stale = "progress_regression"
         elif payload.paragraph_index < current.paragraph_index:
             retry_stale = "paragraph_regression"
         if retry_stale:
-            return ReadingProgressRead(
+            return AnnotationSyncRead(
                 accepted=False,
                 stale_reason=retry_stale,
-                chapter_id=current.chapter_id,
-                chapter_number=current.chapter_number,
+                section_id=current.section_id,
+                section_number=current.section_number,
                 progress_percent=current.progress_percent,
                 paragraph_index=current.paragraph_index,
             )
-        current.chapter_id = chapter.id
-        current.chapter_number = payload.chapter_number
+        current.section_id = section.id
+        current.section_number = payload.section_number
         current.progress_percent = payload.progress_percent
         current.paragraph_index = payload.paragraph_index
         current.client_updated_at = incoming_time
         current.synced_at = datetime.now(UTC)
         await session.commit()
-    return ReadingProgressRead(
+    return AnnotationSyncRead(
         accepted=True,
-        chapter_id=chapter.id,
-        chapter_number=payload.chapter_number,
+        section_id=section.id,
+        section_number=payload.section_number,
         progress_percent=payload.progress_percent,
         paragraph_index=payload.paragraph_index,
     )
 
 
-def order_read(order: Order) -> OrderRead:
-    return OrderRead(
-        id=order.id,
-        type=order.type,
-        product_ref=order.product_ref,
-        amount=order.amount,
-        currency=order.currency,
-        status=order.status.value,
-        expires_at=order.expires_at,
+def reservation_read(row: QuotaReservation) -> ReservationRead:
+    return ReservationRead(
+        id=row.id,
+        type=row.type,
+        product_ref=row.product_ref,
+        amount=row.amount,
+        unit=row.unit,
+        status=row.status.value,
+        expires_at=row.expires_at,
     )
 
 
-@app.post("/v1/checkout", response_model=OrderRead, status_code=status.HTTP_201_CREATED)
-async def checkout(
-    payload: CheckoutRequest,
+@app.post(
+    "/v1/quota/reservations", response_model=ReservationRead, status_code=status.HTTP_201_CREATED
+)
+async def create_quota_reservation(
+    payload: QuotaGrantRequest,
     idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
     session: AsyncSession = Depends(get_session),  # noqa: B008
     user: User = Depends(current_user),  # noqa: B008
-) -> OrderRead:
+) -> ReservationRead:
+    """Reserve a token grant or plan renewal. Same Idempotency-Key returns the same row."""
     product_catalog = {
-        "credits-100": ("credits", 500, 100),
-        "credits-500": ("credits", 2000, 500),
-        "subscription-basic": ("subscription", 999, 30),
+        "tokens-100": ("tokens", 500, 100),
+        "tokens-500": ("tokens", 2000, 500),
+        "plan-reader": ("plan", 999, 30),
     }
     product = product_catalog.get(payload.product_ref)
     if product is None or product[0] != payload.type or product[1] != payload.amount:
         raise HTTPException(status_code=400, detail="invalid_product_or_amount")
-    existing = await session.scalar(select(Order).where(Order.idempotency_key == idempotency_key))
+    existing = await session.scalar(
+        select(QuotaReservation).where(QuotaReservation.idempotency_key == idempotency_key)
+    )
     if existing is not None:
         if (
             existing.user_id != user.id
@@ -899,61 +904,63 @@ async def checkout(
             or existing.amount != payload.amount
         ):
             raise HTTPException(status_code=409, detail="idempotency_key_conflict")
-        return order_read(existing)
-    order = Order(
+        return reservation_read(existing)
+    reservation = QuotaReservation(
         user_id=user.id,
         type=payload.type,
         product_ref=payload.product_ref,
         amount=payload.amount,
-        currency=payload.currency.lower(),
-        status=OrderStatus.AWAITING_PAYMENT,
+        unit=payload.unit.lower(),
+        status=ReservationStatus.AWAITING_CONFIRM,
         idempotency_key=idempotency_key,
         expires_at=datetime.now(UTC) + timedelta(minutes=30),
     )
-    session.add(order)
+    session.add(reservation)
     try:
         await session.flush()
         session.add(
-            PaymentTransaction(
-                order_id=order.id,
+            QuotaGrantAttempt(
+                reservation_id=reservation.id,
                 provider="test",
-                provider_tx_id=f"test_session:{order.id}",
+                provider_ref=f"test_session:{reservation.id}",
                 status="pending",
                 raw_ref={"mode": "local_simulated", "created_at": datetime.now(UTC).isoformat()},
             )
         )
         await enqueue(
             session,
-            aggregate_type="order",
-            aggregate_id=str(order.id),
-            event_type="order.created",
+            aggregate_type="quota_reservation",
+            aggregate_id=str(reservation.id),
+            event_type="reservation.created",
             payload={
-                "order_id": str(order.id),
+                "reservation_id": str(reservation.id),
                 "user_id": str(user.id),
-                "product_ref": order.product_ref,
+                "product_ref": reservation.product_ref,
             },
         )
         await session.commit()
     except IntegrityError:
         await session.rollback()
         existing = await session.scalar(
-            select(Order).where(Order.idempotency_key == idempotency_key)
+            select(QuotaReservation).where(QuotaReservation.idempotency_key == idempotency_key)
         )
         if existing is None:
             raise
-        return order_read(existing)
-    await session.refresh(order)
-    return order_read(order)
+        return reservation_read(existing)
+    await session.refresh(reservation)
+    return reservation_read(reservation)
 
 
-@app.get("/v1/orders/{order_id}", response_model=OrderRead)
-async def get_order(
-    order_id: UUID, session: AsyncSession = Depends(get_session), user: User = Depends(current_user)
-) -> OrderRead:  # noqa: B008
-    order = await session.get(Order, order_id)
-    if order is None or order.user_id != user.id:
-        raise HTTPException(status_code=404, detail="order_not_found")
-    return order_read(order)
+@app.get("/v1/quota/reservations/{reservation_id}", response_model=ReservationRead)
+async def get_quota_reservation(
+    reservation_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+) -> ReservationRead:  # noqa: B008
+    reservation = await session.get(QuotaReservation, reservation_id)
+    if reservation is None or reservation.user_id != user.id:
+        raise HTTPException(status_code=404, detail="reservation_not_found")
+    return reservation_read(reservation)
 
 
 @app.get("/v1/entitlements", response_model=list[EntitlementRead])
@@ -980,16 +987,16 @@ async def list_entitlements(
     ]
 
 
-@app.post("/v1/novels/{novel_id}/reading-progress/reset", status_code=status.HTTP_204_NO_CONTENT)
-async def reset_reading_progress(
-    novel_id: UUID, session: AsyncSession = Depends(get_session), user: User = Depends(current_user)
+@app.post("/v1/papers/{paper_id}/annotation-sync/reset", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_annotation_sync(
+    paper_id: UUID, session: AsyncSession = Depends(get_session), user: User = Depends(current_user)
 ) -> None:  # noqa: B008
-    novel = await session.get(Novel, novel_id)
-    if novel is None or novel.status != "published":
-        raise HTTPException(status_code=404, detail="novel_not_found")
+    paper = await session.get(Paper, paper_id)
+    if paper is None or paper.status != "published":
+        raise HTTPException(status_code=404, detail="paper_not_found")
     current = await session.scalar(
-        select(ReadingProgress).where(
-            ReadingProgress.user_id == user.id, ReadingProgress.novel_id == novel_id
+        select(AnnotationSync).where(
+            AnnotationSync.user_id == user.id, AnnotationSync.paper_id == paper_id
         )
     )
     if current is not None:
@@ -998,14 +1005,14 @@ async def reset_reading_progress(
 
 
 @app.post("/v1/webhooks/{provider}", status_code=status.HTTP_200_OK)
-async def payment_webhook(
+async def quota_grant_webhook(
     provider: str,
-    payload: WebhookPayment,
+    payload: WebhookQuotaGrant,
     request: Request,
     x_webhook_signature: str | None = Header(default=None, alias="X-Webhook-Signature"),
     session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> dict[str, str]:
-    if provider not in {"test", "stripe"}:
+    if provider not in {"test", "hmac"}:
         raise HTTPException(status_code=404, detail="provider_not_supported")
     if provider != "test":
         body = await request.body()
@@ -1028,92 +1035,104 @@ async def payment_webhook(
     except IntegrityError:
         await session.rollback()
         return {"status": "duplicate_ignored"}
-    order = await session.get(Order, payload.order_id)
-    if order is None:
+    reservation = await session.get(QuotaReservation, payload.reservation_id)
+    if reservation is None:
         event.status = "rejected"
         await session.commit()
-        raise HTTPException(status_code=404, detail="order_not_found")
+        raise HTTPException(status_code=404, detail="reservation_not_found")
     expires_at = (
-        order.expires_at if order.expires_at.tzinfo else order.expires_at.replace(tzinfo=UTC)
+        reservation.expires_at
+        if reservation.expires_at.tzinfo
+        else reservation.expires_at.replace(tzinfo=UTC)
     )
-    if expires_at < datetime.now(UTC) and order.status not in {
-        OrderStatus.PAID,
-        OrderStatus.FULFILLED,
+    if expires_at < datetime.now(UTC) and reservation.status not in {
+        ReservationStatus.CONFIRMED,
+        ReservationStatus.GRANTED,
     }:
         event.status = "rejected"
         await session.commit()
-        raise HTTPException(status_code=409, detail="order_expired")
-    transaction = await session.scalar(
-        select(PaymentTransaction)
+        raise HTTPException(status_code=409, detail="reservation_expired")
+    attempt = await session.scalar(
+        select(QuotaGrantAttempt)
         .where(
-            PaymentTransaction.order_id == order.id,
-            PaymentTransaction.provider == provider,
-            PaymentTransaction.status == "pending",
+            QuotaGrantAttempt.reservation_id == reservation.id,
+            QuotaGrantAttempt.provider == provider,
+            QuotaGrantAttempt.status == "pending",
         )
-        .order_by(PaymentTransaction.created_at.desc())
+        .order_by(QuotaGrantAttempt.created_at.desc())
     )
-    if transaction is None:
-        transaction = PaymentTransaction(
-            order_id=order.id,
+    if attempt is None:
+        attempt = QuotaGrantAttempt(
+            reservation_id=reservation.id,
             provider=provider,
-            provider_tx_id=payload.provider_tx_id,
+            provider_ref=payload.provider_ref,
             status="pending",
         )
-        session.add(transaction)
-    transaction.provider_tx_id = payload.provider_tx_id
-    transaction.status = "completed" if payload.success else "failed"
-    if payload.success and order.status not in {OrderStatus.PAID, OrderStatus.FULFILLED}:
-        order.status = OrderStatus.PAID
-        order.status = OrderStatus.FULFILLING
-        if order.type == "subscription":
+        session.add(attempt)
+    attempt.provider_ref = payload.provider_ref
+    attempt.status = "completed" if payload.success else "failed"
+    if payload.success and reservation.status not in {
+        ReservationStatus.CONFIRMED,
+        ReservationStatus.GRANTED,
+    }:
+        reservation.status = ReservationStatus.CONFIRMED
+        reservation.status = ReservationStatus.GRANTING
+        if reservation.type == "plan":
             now = datetime.now(UTC)
             session.add(
                 Entitlement(
-                    user_id=order.user_id,
-                    kind="subscription",
-                    plan=order.product_ref,
+                    user_id=reservation.user_id,
+                    kind="plan",
+                    plan=reservation.product_ref,
                     status="active",
                     period_start=now,
                     period_end=now + timedelta(days=30),
-                    order_id=order.id,
+                    reservation_id=reservation.id,
                 )
             )
         else:
-            ledger_key = f"order:{order.id}"
+            ledger_key = f"reservation:{reservation.id}"
             if (
                 await session.scalar(
-                    select(CreditLedger).where(CreditLedger.idempotency_key == ledger_key)
+                    select(TokenLedger).where(TokenLedger.idempotency_key == ledger_key)
                 )
                 is None
             ):
                 previous = await session.scalar(
-                    select(func.coalesce(func.sum(CreditLedger.delta), 0)).where(
-                        CreditLedger.user_id == order.user_id
+                    select(func.coalesce(func.sum(TokenLedger.delta), 0)).where(
+                        TokenLedger.user_id == reservation.user_id
                     )
                 )
-                grant = {"credits-100": 100, "credits-500": 500}.get(order.product_ref)
+                grant = {"tokens-100": 100, "tokens-500": 500}.get(reservation.product_ref)
                 if grant is None:
-                    raise HTTPException(status_code=400, detail="invalid_credit_product")
+                    raise HTTPException(status_code=400, detail="invalid_token_product")
                 session.add(
-                    CreditLedger(
-                        user_id=order.user_id,
+                    TokenLedger(
+                        user_id=reservation.user_id,
                         delta=grant,
                         balance_after=int(previous or 0) + grant,
-                        reason=f"topup:{order.product_ref}",
-                        order_id=order.id,
+                        reason=f"grant:{reservation.product_ref}",
+                        reservation_id=reservation.id,
                         idempotency_key=ledger_key,
                     )
                 )
-        order.status = OrderStatus.FULFILLED
-    elif not payload.success and order.status not in {OrderStatus.FULFILLED, OrderStatus.PAID}:
-        order.status = OrderStatus.FAILED
+        reservation.status = ReservationStatus.GRANTED
+    elif not payload.success and reservation.status not in {
+        ReservationStatus.GRANTED,
+        ReservationStatus.CONFIRMED,
+    }:
+        reservation.status = ReservationStatus.FAILED
     event.status = "processed"
     await enqueue(
         session,
-        aggregate_type="order",
-        aggregate_id=str(order.id),
-        event_type="order.paid" if payload.success else "order.failed",
-        payload={"order_id": str(order.id), "provider": provider, "event_id": payload.event_id},
+        aggregate_type="quota_reservation",
+        aggregate_id=str(reservation.id),
+        event_type="reservation.granted" if payload.success else "reservation.failed",
+        payload={
+            "reservation_id": str(reservation.id),
+            "provider": provider,
+            "event_id": payload.event_id,
+        },
     )
     await session.commit()
     return {"status": "processed"}

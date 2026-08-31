@@ -25,8 +25,12 @@ const BOUNDARIES = [
     body: "Provider cost uses configured per-million-token rates. Zero rates are for free/local providers, not monetary production measurements.",
   },
   {
+    title: "Annotation progress sync",
+    body: "Monotonic offline annotation sync uses SQLite writer serialization or PostgreSQL FOR UPDATE. First-write races are gated by the unique (user, paper) constraint, not by locking a missing row.",
+  },
+  {
     title: "Concurrency gates",
-    body: "Progress and outbox tests run against real Postgres (CI Docker, or pip pgserver). Overlap is forced with a barrier after both SELECTs.",
+    body: "Annotation-sync and outbox tests run against real Postgres (CI Docker, or pip pgserver). Overlap is forced with a barrier after both SELECTs.",
   },
   {
     title: "Extractive memory",
@@ -46,7 +50,7 @@ const BOUNDARIES = [
   },
   {
     title: "Product foresight",
-    body: "tool.foresight is a deterministic tool-outcome simulator: calculator AST, retrieval MiniLM preview, SQL allowlist check, sonar closed form. Not RAP and not the academic world-model package.",
+    body: "tool.foresight is a deterministic tool-outcome simulator: calculator AST, retrieval MiniLM preview, SQL allowlist check, arXiv catalog preview, plot stats. It is not the academic tabular world-model package.",
   },
   {
     title: "Handoff",
@@ -57,8 +61,12 @@ const BOUNDARIES = [
     body: "A public demo is not a production deployment. Railway Hobby is paid. Neon free can cold-start. Not zero-cost hosting.",
   },
   {
+    title: "Quota reservations",
+    body: "POST /v1/quota/reservations is an idempotent token-grant or plan-renewal demo. Webhook events are de-duplicated. It is not a payment processor.",
+  },
+  {
     title: "Closed-loop demo",
-    body: "Fresh clones seed Harbor Field Notes from the eval corpus. /evals serves data/evals_snapshot.json. Playground runs still require an LLM key and fail closed without one.",
+    body: "Fresh clones seed AgentForge Literature Notes from the eval corpus. /evals serves data/evals_snapshot.json. Playground runs still require an LLM key and fail closed without one.",
   },
 ];
 

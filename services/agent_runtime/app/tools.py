@@ -26,7 +26,7 @@ class RetrievalInput(BaseModel):
 
 class HandoffInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    specialist: str = Field(pattern="^(science|retrieval)$")
+    specialist: str = Field(pattern="^(code_data|retrieval|writer)$")
     reason: str = Field(min_length=1, max_length=400)
     brief: str = Field(min_length=1, max_length=2_000)
 
@@ -128,15 +128,15 @@ async def handoff(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def builtin_tools() -> dict[str, ToolDefinition]:
-    from .science_tools import (
+    from .research_tools import (
+        ArxivSearchInput,
         IntentInput,
-        SonarInput,
+        PlotInput,
         SQLAnalyticsInput,
-        WindTunnelInput,
+        arxiv_search,
         intent_router,
-        passive_sonar,
+        plot_generator,
         readonly_sql,
-        wind_tunnel,
     )
 
     calculator_definition = ToolDefinition(
@@ -150,7 +150,7 @@ def builtin_tools() -> dict[str, ToolDefinition]:
     retrieval_definition = ToolDefinition(
         name="retrieval",
         description=(
-            "Hybrid search over published novels and chapters. BM25 lexical retrieval "
+            "Hybrid search over published papers and sections. BM25 lexical retrieval "
             "plus MiniLM semantic embeddings, fused with RRF and MiniLM late-interaction "
             "MaxSim (ColBERT-style). Selective skip when the vector gap is already large. "
             "Returns passage_id-tagged snippets."
@@ -160,21 +160,21 @@ def builtin_tools() -> dict[str, ToolDefinition]:
         timeout_seconds=3.0,
         execute=retrieval,
     )
-    sonar_definition = ToolDefinition(
-        name="passive_sonar",
-        description="Estimate a 2D passive sonar source from sensor bearings using least squares.",
-        input_model=SonarInput,
+    arxiv_definition = ToolDefinition(
+        name="arxiv_search",
+        description="Search a closed arXiv-style paper catalog by title and abstract keywords.",
+        input_model=ArxivSearchInput,
         risk="medium",
         timeout_seconds=3.0,
-        execute=passive_sonar,
+        execute=arxiv_search,
     )
-    wind_definition = ToolDefinition(
-        name="wind_tunnel",
-        description="Compute a 2D inviscid potential-flow pressure field around a cylinder.",
-        input_model=WindTunnelInput,
+    plot_definition = ToolDefinition(
+        name="plot_generator",
+        description="Compute series statistics and a deterministic SVG polyline from x/y values.",
+        input_model=PlotInput,
         risk="medium",
-        timeout_seconds=5.0,
-        execute=wind_tunnel,
+        timeout_seconds=3.0,
+        execute=plot_generator,
     )
     sql_definition = ToolDefinition(
         name="readonly_sql",
@@ -186,7 +186,7 @@ def builtin_tools() -> dict[str, ToolDefinition]:
     )
     intent_definition = ToolDefinition(
         name="intent_router",
-        description="Classify a request and select a text, audio, science, data, or math adapter.",
+        description="Classify a request and select a research, data, math, writing, or text adapter.",
         input_model=IntentInput,
         risk="low",
         timeout_seconds=1.0,
@@ -195,8 +195,8 @@ def builtin_tools() -> dict[str, ToolDefinition]:
     handoff_definition = ToolDefinition(
         name="handoff",
         description=(
-            "Transfer this run to the science or retrieval specialist with a brief. "
-            "The thread stays with that specialist; there is no automatic return to the supervisor."
+            "Transfer this run to the code-data, retrieval, or writer specialist with a brief. "
+            "The thread stays with that specialist after the transfer."
         ),
         input_model=HandoffInput,
         risk="low",
@@ -207,8 +207,8 @@ def builtin_tools() -> dict[str, ToolDefinition]:
     definitions = [
         calculator_definition,
         retrieval_definition,
-        sonar_definition,
-        wind_definition,
+        arxiv_definition,
+        plot_definition,
         sql_definition,
         intent_definition,
         handoff_definition,

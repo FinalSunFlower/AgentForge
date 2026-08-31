@@ -81,6 +81,6 @@ export type Preset = {
   hint: string;
   prompt?: string;
   agentSlug?: string;
-  kind?: "run" | "checkout";
+  kind?: "run" | "quota";
   note?: string;
 };

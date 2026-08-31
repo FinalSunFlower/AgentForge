@@ -137,12 +137,12 @@ async def test_cancel_between_steps_is_honored() -> None:
 
 @pytest.mark.asyncio
 async def test_approved_readonly_sql_executes() -> None:
-    run_id, _ = await _create_run("SELECT title FROM novels")
+    run_id, _ = await _create_run("SELECT title FROM papers")
     provider = TwoStepProvider(
         ModelTurn(
             tool_calls=[
                 ToolCallDelta(
-                    "tc-sql", "readonly_sql", '{"query":"SELECT title FROM novels LIMIT 5"}'
+                    "tc-sql", "readonly_sql", '{"query":"SELECT title FROM papers LIMIT 5"}'
                 )
             ]
         ),

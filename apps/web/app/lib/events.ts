@@ -135,16 +135,16 @@ export function eventSummary(event: EventRecord): string {
 }
 
 export const AGENT_LABEL: Record<string, string> = {
-  "default-assistant": "Assistant",
+  "academic-writer": "Writer",
   supervisor: "Supervisor",
-  "science-specialist": "Science",
+  "code-data-specialist": "Code & data",
   "retrieval-specialist": "Retrieval",
 };
 
 export const AGENT_BLURB: Record<string, string> = {
-  "default-assistant": "ReAct + built-in tools",
+  "academic-writer": "Citation-grounded drafting",
   supervisor: "One-way handoff to a specialist",
-  "science-specialist": "Calculator, sonar, wind tunnel",
+  "code-data-specialist": "Calculator, plots, read-only SQL",
   "retrieval-specialist": "Hybrid search with citations",
 };
 
@@ -152,38 +152,38 @@ export const PRESETS: Preset[] = [
   {
     id: "calc",
     label: "Calculate 12 × (3 + 4)",
-    hint: "Assistant · AST-checked calculator",
+    hint: "Writer · AST-checked calculator is on the code-data specialist",
     prompt: "Calculate 12*(3+4)",
-    agentSlug: "default-assistant",
+    agentSlug: "code-data-specialist",
   },
   {
     id: "retrieval",
-    label: "Search the novel corpus",
-    hint: "Assistant · hybrid retrieval with citations",
-    prompt: "Search the notes for the monsoon delay of the caravan. Cite every passage_id you use.",
-    agentSlug: "default-assistant",
+    label: "Search the literature notes",
+    hint: "Writer · hybrid retrieval with citations",
+    prompt: "Search the literature notes for hierarchical task networks. Cite every passage_id you use.",
+    agentSlug: "academic-writer",
   },
   {
-    id: "sonar",
-    label: "Passive sonar ranging",
-    hint: "Supervisor hands off to Science",
-    prompt: "Triangulate the passive sonar source with the science tools. Do not invent a bearing.",
+    id: "arxiv",
+    label: "Closed arXiv catalog",
+    hint: "Supervisor hands off to code-data or retrieval",
+    prompt: "Search the arXiv literature catalog for ReAct tool traces. Do not invent a paper.",
     agentSlug: "supervisor",
   },
   {
     id: "memory",
     label: "Remember structured facts",
-    hint: "Assistant · extractive memory",
+    hint: "Writer · extractive memory",
     prompt:
-      "Help me remember that my name is Alex and I like science-fiction novels. If I later ask who I am, recall those structured facts.",
-    agentSlug: "default-assistant",
+      "Help me remember that my name is Alex and I work on retrieval evaluation. If I later ask who I am, recall those structured facts.",
+    agentSlug: "academic-writer",
     note: "This starts an explicit-fact turn. The measured 70-turn needle is on Evals — one prompt does not compress by itself.",
   },
 ];
 
-export const CHECKOUT_PRESET: Preset = {
+export const QUOTA_PRESET: Preset = {
   id: "idempotency",
-  label: "Idempotent checkout",
-  hint: "Same order key twice",
-  kind: "checkout",
+  label: "Idempotent quota reservation",
+  hint: "Same reservation key twice",
+  kind: "quota",
 };
