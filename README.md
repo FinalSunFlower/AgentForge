@@ -227,3 +227,6 @@ pinned. This work does not reproduce their numbers.
 prompted FakeEngine experts, the trajectory adapter, and tiny end-to-end
 runs that must write figures. Lint: `ruff check .` and `ruff format --check .`
 from this directory (same rule set as the parent repo).
+
+Original code is MIT ([LICENSE](LICENSE)). Model cards, citations, and
+dependency licenses: [THIRD_PARTY.md](THIRD_PARTY.md).
