@@ -1,0 +1,24 @@
+# Frozen small instruct model on one GPU. No LoRA.
+# Default is the model that actually downloaded on this machine.
+# If VRAM allows, put Qwen/Qwen2.5-1.5B-Instruct first instead.
+environment: Household-v1
+backend: prompted
+engine: huggingface
+model_id: HuggingFaceTB/SmolLM2-360M-Instruct
+fallback_model_ids:
+  - Qwen/Qwen2.5-1.5B-Instruct
+  - HuggingFaceTB/SmolLM2-1.7B-Instruct
+max_new_tokens: 64
+train_episodes: 0
+calibration_episodes: 4
+test_episodes: 8
+max_steps: 6
+seeds: [7]
+top_k: 1
+gate_quantile: 0.75
+controller_cost: 1.0
+expert_cost: 0.35
+token_cost: 0.0001
+planning_depth: 1
+variants: [react, preact]
+skip_expert_count: true

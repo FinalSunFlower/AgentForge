@@ -1,0 +1,24 @@
+# 0.5B Qwen failed at JSON dynamics; 1.5B Qwen download aborted.
+# Next frozen candidate: SmolLM2-360M-Instruct. No LoRA.
+environment: Household-v1
+backend: prompted
+engine: huggingface
+model_id: HuggingFaceTB/SmolLM2-360M-Instruct
+fallback_model_ids:
+  - Qwen/Qwen2.5-1.5B-Instruct
+  - HuggingFaceTB/SmolLM2-1.7B-Instruct
+device: cpu
+max_new_tokens: 64
+train_episodes: 0
+calibration_episodes: 2
+test_episodes: 4
+max_steps: 4
+seeds: [7]
+top_k: 1
+gate_quantile: 0.75
+controller_cost: 1.0
+expert_cost: 0.35
+token_cost: 0.0001
+planning_depth: 1
+variants: [react, preact]
+skip_expert_count: true

@@ -1,0 +1,17 @@
+.venv
+.git
+.github
+apps/web/node_modules
+apps/web/.next
+academic/results
+*.db
+*.db-shm
+*.db-wal
+.env
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.jpg
+111.jpg
+222.jpg

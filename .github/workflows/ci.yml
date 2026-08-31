@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: agentforge
+          POSTGRES_PASSWORD: agentforge
+          POSTGRES_DB: agentforge
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U agentforge -d agentforge"
+          --health-interval=5s --health-timeout=5s --health-retries=12
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/fastembed
+            ~/.cache/huggingface
+          key: minilm-l6-v2-ce-${{ runner.os }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install package
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: Static checks
+        run: |
+          ruff check .
+          ruff format --check .
+          mypy services packages --ignore-missing-imports
+      - name: Tests with PostgreSQL and Redis
+        env:
+          DATABASE_URL: postgresql+asyncpg://agentforge:agentforge@localhost:5432/agentforge
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest
+          python -m pip install -e academic
+          pytest academic/tests
+      - name: Web build
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build

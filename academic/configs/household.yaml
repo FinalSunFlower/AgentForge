@@ -1,0 +1,15 @@
+# Tabular experts on Household-v1. Not official ALFWorld.
+environment: Household-v1
+backend: tabular
+train_episodes: 200
+calibration_episodes: 40
+test_episodes: 40
+max_steps: 8
+seeds: [7, 19]
+top_k: 1
+gate_quantile: 0.75
+controller_cost: 1.0
+expert_cost: 0.35
+planning_depth: 2
+variants: [react, preact, rap_single, routed_selective]
+skip_expert_count: true

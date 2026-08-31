@@ -1,0 +1,17 @@
+# GPU-free prompted path. Uses FakeEngine; pytest and CI never download weights.
+environment: Household-v1
+backend: prompted
+engine: fake
+train_episodes: 0
+calibration_episodes: 4
+test_episodes: 8
+max_steps: 6
+seeds: [7]
+top_k: 1
+gate_quantile: 0.75
+controller_cost: 1.0
+expert_cost: 0.35
+token_cost: 0.0
+planning_depth: 1
+variants: [react, preact, rap_single, routed_selective]
+skip_expert_count: true

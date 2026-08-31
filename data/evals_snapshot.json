@@ -1,0 +1,194 @@
+{
+  "disclaimer": "Retrieval and needle numbers are computed from the checked-in corpus and extractive compressor. Agent/supervisor task_success_rate values are keyword-router and MiniLM-embedding-router baselines, not live-LLM routing. hybrid_cross_encoder is the off-the-shelf MS MARCO MiniLM-L-6 ONNX model (no local training). The hard suites are trap/paraphrase/multi-step tasks and are expected to score lower.",
+  "generated_at": "2026-08-31T01:44:44.759182+00:00",
+  "hard_retrieval": {
+    "bm25": {
+      "mrr": 0.0,
+      "queries": 6.0,
+      "recall_at_k": 0.0
+    },
+    "hybrid": {
+      "mrr": 0.9167,
+      "queries": 6.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_cross_encoder": {
+      "mrr": 0.75,
+      "queries": 6.0,
+      "recall_at_k": 0.8333
+    },
+    "hybrid_late_interaction": {
+      "mrr": 1.0,
+      "queries": 6.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_rerank": {
+      "mrr": 0.9167,
+      "queries": 6.0,
+      "recall_at_k": 1.0
+    },
+    "keyword": {
+      "mrr": 0.0,
+      "queries": 6.0,
+      "recall_at_k": 0.0
+    },
+    "vector": {
+      "mrr": 1.0,
+      "queries": 6.0,
+      "recall_at_k": 1.0
+    }
+  },
+  "memory": {
+    "claim": "Needles are structured facts (IDs, preference keywords, numbers). Implicit unstructured context is not guaranteed.",
+    "scope": "structured_extractive_facts",
+    "survived": {
+      "plan_quota": true,
+      "timezone": true,
+      "vault_code": true
+    }
+  },
+  "needle": {
+    "scope": "structured_extractive_facts",
+    "survives_compression": true
+  },
+  "retrieval": {
+    "bm25": {
+      "mrr": 0.8421,
+      "queries": 19.0,
+      "recall_at_k": 0.8421
+    },
+    "hybrid": {
+      "mrr": 1.0,
+      "queries": 19.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_cross_encoder": {
+      "mrr": 0.9649,
+      "queries": 19.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_late_interaction": {
+      "mrr": 1.0,
+      "queries": 19.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_rerank": {
+      "mrr": 1.0,
+      "queries": 19.0,
+      "recall_at_k": 1.0
+    },
+    "keyword": {
+      "mrr": 0.8421,
+      "queries": 19.0,
+      "recall_at_k": 0.8421
+    },
+    "vector": {
+      "mrr": 1.0,
+      "queries": 19.0,
+      "recall_at_k": 1.0
+    }
+  },
+  "routing": {
+    "embedding": {
+      "avg_cost_micros": 0.0,
+      "avg_steps": 1.9583,
+      "claim": "MiniLM cosine over frozen tool/specialist descriptions, plus a small intent-verb override, retrieval-verb prior, negation filter, and canonical-order post-process. Not a learned router and not live-LLM routing.",
+      "eval_kind": "minilm_embedding_router",
+      "param_accuracy": 1.0,
+      "task_success_rate": 1.0,
+      "tasks": 24.0,
+      "tool_selection_accuracy": 1.0
+    },
+    "hard_embedding": {
+      "avg_cost_micros": 0.0,
+      "avg_steps": 2.0,
+      "claim": "Trap, paraphrase, and ordered multi-tool tasks. Keyword and MiniLM routers are expected to drop. Not live-LLM routing.",
+      "eval_kind": "minilm_embedding_router",
+      "param_accuracy": 1.0,
+      "suite": "hard",
+      "task_success_rate": 0.5,
+      "tasks": 6.0,
+      "tool_selection_accuracy": 0.5
+    },
+    "hard_keyword": {
+      "avg_cost_micros": 0.0,
+      "avg_steps": 2.0,
+      "claim": "Trap, paraphrase, and ordered multi-tool tasks. Keyword and MiniLM routers are expected to drop. Not live-LLM routing.",
+      "eval_kind": "deterministic_keyword_router",
+      "param_accuracy": 0.8333,
+      "suite": "hard",
+      "task_success_rate": 0.3333,
+      "tasks": 6.0,
+      "tool_selection_accuracy": 0.3333
+    },
+    "keyword": {
+      "avg_cost_micros": 0.0,
+      "avg_steps": 1.9583,
+      "claim": "Deterministic keyword-router baseline. Live-LLM routing has no separate measured number.",
+      "eval_kind": "deterministic_keyword_router",
+      "param_accuracy": 1.0,
+      "task_success_rate": 1.0,
+      "tasks": 24.0,
+      "tool_selection_accuracy": 1.0
+    },
+    "supervisor_embedding": {
+      "avg_cost_micros": 0.0,
+      "avg_steps": 2.0,
+      "claim": "MiniLM cosine over frozen tool/specialist descriptions, plus a small intent-verb override, retrieval-verb prior, negation filter, and canonical-order post-process. Not a learned router and not live-LLM routing.",
+      "eval_kind": "minilm_embedding_router",
+      "param_accuracy": 1.0,
+      "task_success_rate": 1.0,
+      "tasks": 3.0,
+      "tool_selection_accuracy": 1.0
+    },
+    "supervisor_keyword": {
+      "avg_cost_micros": 0.0,
+      "avg_steps": 2.0,
+      "claim": "Deterministic keyword-router baseline. Live-LLM routing has no separate measured number.",
+      "eval_kind": "deterministic_keyword_router",
+      "param_accuracy": 1.0,
+      "task_success_rate": 1.0,
+      "tasks": 3.0,
+      "tool_selection_accuracy": 1.0
+    }
+  },
+  "source": "snapshot",
+  "zero_overlap": {
+    "bm25": {
+      "mrr": 0.0,
+      "queries": 3.0,
+      "recall_at_k": 0.0
+    },
+    "hybrid": {
+      "mrr": 1.0,
+      "queries": 3.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_cross_encoder": {
+      "mrr": 0.7778,
+      "queries": 3.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_late_interaction": {
+      "mrr": 1.0,
+      "queries": 3.0,
+      "recall_at_k": 1.0
+    },
+    "hybrid_rerank": {
+      "mrr": 1.0,
+      "queries": 3.0,
+      "recall_at_k": 1.0
+    },
+    "keyword": {
+      "mrr": 0.0,
+      "queries": 3.0,
+      "recall_at_k": 0.0
+    },
+    "minilm_recall_at_3": 1.0,
+    "vector": {
+      "mrr": 1.0,
+      "queries": 3.0,
+      "recall_at_k": 1.0
+    }
+  }
+}

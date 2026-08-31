@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentforge-academic"
+version = "0.1.0"
+description = "Reproducible routed lightweight world-model planning experiments"
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.0,<3.0", "PyYAML>=6.0,<7.0", "matplotlib>=3.9,<4.0"]
+
+[project.optional-dependencies]
+research = ["pytest>=8.3,<9.0", "pytest-asyncio>=0.25,<1.0", "ruff>=0.9,<1.0", "mypy>=1.14,<2.0"]
+llm = ["transformers>=4.44,<5.0", "accelerate>=0.34,<2.0", "huggingface-hub>=0.24,<1.0"]
+
+[project.scripts]
+agentforge-academic = "agentforge_academic.experiment:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentforge_academic"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM117"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agentforge_academic"]

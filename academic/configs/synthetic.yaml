@@ -1,0 +1,11 @@
+environment: ToolWorld-v1
+train_episodes: 800
+calibration_episodes: 200
+test_episodes: 160
+max_steps: 8
+seeds: [7, 19, 43]
+top_k: 2
+gate_quantile: 0.75
+controller_cost: 1.0
+expert_cost: 0.35
+planning_depth: 3
