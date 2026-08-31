@@ -6,8 +6,8 @@ import logging
 from services.core_api.app.db import SessionFactory, init_db
 from services.core_api.app.outbox import RedisNotConfigured, relay_once
 
-from .billing import expire_pending_orders_once
 from .push import dispatch_push_once
+from .reservations import expire_pending_quota_reservations_once
 from .runtime_dispatch import dispatch_created_runs_once
 from .summary import summarize_threads_once
 from .usage import aggregate_usage_once
@@ -36,12 +36,12 @@ async def run() -> None:
             if push_count:
                 logger.info("processed push deliveries", extra={"count": push_count})
         async with SessionFactory() as session:
-            expired = await expire_pending_orders_once(session)
+            expired = await expire_pending_quota_reservations_once(session)
             summaries = await summarize_threads_once(session)
             if expired or summaries:
                 logger.info(
                     "ran maintenance tasks",
-                    extra={"expired_orders": expired, "summaries": summaries},
+                    extra={"expired_quota_reservations": expired, "summaries": summaries},
                 )
         async with SessionFactory() as session:
             dispatched = await dispatch_created_runs_once(session)

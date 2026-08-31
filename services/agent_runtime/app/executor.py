@@ -399,7 +399,7 @@ class RunExecutor:
                 tools = [definition.schema() for definition in catalog.values()]
                 allowed_tools = set(spec.tools)
                 specialist_agent = await session.scalar(
-                    select(Agent).where(Agent.slug == f"{spec.name}-specialist")
+                    select(Agent).where(Agent.slug == spec.slug)
                 )
                 if specialist_agent is not None:
                     # One-way sticky transfer: later runs skip the supervisor.
@@ -422,7 +422,7 @@ class RunExecutor:
                         "specialist": spec.name,
                         "reason": transfer.get("reason"),
                         "tools": list(spec.tools),
-                        "agent_slug": f"{spec.name}-specialist",
+                        "agent_slug": spec.slug,
                     },
                 )
 

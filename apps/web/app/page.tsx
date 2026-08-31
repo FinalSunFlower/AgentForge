@@ -7,7 +7,7 @@ import { AppChrome } from "./components/AppChrome";
 import { AuthMenu } from "./components/AuthMenu";
 import { TraceList } from "./components/TraceList";
 import { API, DEMO_BUDGET_COPY, TOKEN_KEY, request, streamEvents } from "./lib/api";
-import { AGENT_BLURB, AGENT_LABEL, CHECKOUT_PRESET, PRESETS, insightsFromEvents } from "./lib/events";
+import { AGENT_BLURB, AGENT_LABEL, PRESETS, QUOTA_PRESET, insightsFromEvents } from "./lib/events";
 import type { Agent, EventRecord, Preset, PublicStatus, RunRead, ToolRow, User } from "./lib/types";
 
 export default function PlaygroundPage() {
@@ -33,7 +33,7 @@ export default function PlaygroundPage() {
     request<Agent[]>("/v1/agents")
       .then((items) => {
         setAgents(items);
-        const preferred = items.find((item) => item.slug === "default-assistant") ?? items[0];
+        const preferred = items.find((item) => item.slug === "academic-writer") ?? items[0];
         if (preferred) setAgentId(preferred.id);
         setApiLive(true);
       })
@@ -112,7 +112,7 @@ export default function PlaygroundPage() {
   }
 
   function applyPreset(preset: Preset) {
-    if (preset.kind === "checkout") {
+    if (preset.kind === "quota") {
       void runIdempotencyDemo();
       return;
     }
@@ -129,32 +129,32 @@ export default function PlaygroundPage() {
 
   async function runIdempotencyDemo() {
     if (!token) {
-      setError("Sign in to submit the same checkout twice.");
+      setError("Sign in to submit the same quota grant twice.");
       return;
     }
     setBusy(true);
     setError("");
     try {
-      const key = `demo-order-${Date.now()}`;
-      const payload = { type: "credits", product_ref: "credits-100", amount: 500, currency: "usd" };
+      const key = `demo-quota-${Date.now()}`;
+      const payload = { type: "tokens", product_ref: "tokens-100", amount: 500, unit: "token" };
       const headers = { Authorization: `Bearer ${token}`, "Idempotency-Key": key };
-      const first = await request<{ id: string }>("/v1/checkout", {
+      const first = await request<{ id: string }>("/v1/quota/reservations", {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       });
-      const second = await request<{ id: string }>("/v1/checkout", {
+      const second = await request<{ id: string }>("/v1/quota/reservations", {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       });
       setNote(
         first.id === second.id
-          ? `Both checkouts returned order ${first.id.slice(0, 8)}…`
+          ? `Both quota grants returned reservation ${first.id.slice(0, 8)}…`
           : `Unexpected: ${first.id} vs ${second.id}`,
       );
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Checkout demo failed");
+      setError(reason instanceof Error ? reason.message : "Quota reservation demo failed");
     } finally {
       setBusy(false);
     }
@@ -267,8 +267,8 @@ export default function PlaygroundPage() {
                 ))}
               </div>
               {user && (
-                <button type="button" className="hero-link" disabled={busy} onClick={() => applyPreset(CHECKOUT_PRESET)}>
-                  {CHECKOUT_PRESET.label} · {CHECKOUT_PRESET.hint}
+                <button type="button" className="hero-link" disabled={busy} onClick={() => applyPreset(QUOTA_PRESET)}>
+                  {QUOTA_PRESET.label} · {QUOTA_PRESET.hint}
                 </button>
               )}
               {note && <p className="note">{note}</p>}

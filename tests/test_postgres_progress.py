@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from services.core_api.app.models import Chapter, Novel, ReadingProgress, User
+from services.core_api.app.models import AnnotationSync, Paper, PaperSection, User
 from tests.pg_gate import make_session_factory, postgres_url
 
 
@@ -15,7 +15,7 @@ async def test_postgres_concurrent_progress_writes_leave_one_row() -> None:
     """Force a first-write race: both SELECTs see no row before either INSERTs.
 
     FOR UPDATE on zero rows does not lock a future insert. The unique
-    (user, novel) constraint plus IntegrityError retry is the real first-write
+    (user, paper) constraint plus IntegrityError retry is the real first-write
     gate. The barrier makes both observers see empty before either commits.
     """
     with postgres_url() as database_url:
@@ -23,15 +23,15 @@ async def test_postgres_concurrent_progress_writes_leave_one_row() -> None:
         try:
             async with factory() as session:
                 user = User(email=f"{uuid4()}@example.com", display_name="Reader")
-                novel = Novel(title=f"Race {uuid4()}", author_name="Author", description="gate")
-                session.add_all([user, novel])
+                paper = Paper(title=f"Race {uuid4()}", author_name="Author", description="gate")
+                session.add_all([user, paper])
                 await session.flush()
-                chapter = Chapter(
-                    novel_id=novel.id, number=1, title="One", content="content", is_published=True
+                section = PaperSection(
+                    paper_id=paper.id, number=1, title="One", content="content", is_published=True
                 )
-                session.add(chapter)
+                session.add(section)
                 await session.commit()
-                user_id, novel_id, chapter_id = user.id, novel.id, chapter.id
+                user_id, paper_id, section_id = user.id, paper.id, section.id
 
             barrier = asyncio.Barrier(2)
             saw_empty: list[bool] = []
@@ -41,9 +41,9 @@ async def test_postgres_concurrent_progress_writes_leave_one_row() -> None:
                 nonlocal integrity_hits
                 async with factory() as session:
                     query = (
-                        select(ReadingProgress)
+                        select(AnnotationSync)
                         .where(
-                            ReadingProgress.user_id == user_id, ReadingProgress.novel_id == novel_id
+                            AnnotationSync.user_id == user_id, AnnotationSync.paper_id == paper_id
                         )
                         .with_for_update()
                     )
@@ -53,11 +53,11 @@ async def test_postgres_concurrent_progress_writes_leave_one_row() -> None:
                     now = datetime.now(UTC)
                     if current is None:
                         session.add(
-                            ReadingProgress(
+                            AnnotationSync(
                                 user_id=user_id,
-                                novel_id=novel_id,
-                                chapter_id=chapter_id,
-                                chapter_number=1,
+                                paper_id=paper_id,
+                                section_id=section_id,
+                                section_number=1,
                                 progress_percent=percent,
                                 paragraph_index=percent,
                                 client_updated_at=now,
@@ -86,8 +86,8 @@ async def test_postgres_concurrent_progress_writes_leave_one_row() -> None:
             async with factory() as session:
                 count = await session.scalar(
                     select(func.count())
-                    .select_from(ReadingProgress)
-                    .where(ReadingProgress.user_id == user_id, ReadingProgress.novel_id == novel_id)
+                    .select_from(AnnotationSync)
+                    .where(AnnotationSync.user_id == user_id, AnnotationSync.paper_id == paper_id)
                 )
                 assert session.bind is not None
                 assert session.bind.dialect.name == "postgresql"

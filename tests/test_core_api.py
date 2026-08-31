@@ -29,12 +29,12 @@ def test_core_api_bootstraps_agent_and_thread() -> None:
         assert response.status_code == 200
         slugs = {row["slug"] for row in response.json()}
         assert slugs == {
-            "default-assistant",
+            "academic-writer",
             "supervisor",
-            "science-specialist",
+            "code-data-specialist",
             "retrieval-specialist",
         }
-        agent = next(row for row in response.json() if row["slug"] == "default-assistant")
+        agent = next(row for row in response.json() if row["slug"] == "academic-writer")
 
         response = client.post(
             "/v1/threads",

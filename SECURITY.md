@@ -20,7 +20,7 @@ are schema-validated, risk-checked, depth/timeout bounded, and written to the
 SQL event log with schema hash and an output summary.
 
 Calculator expressions use an AST allowlist. Read-only SQL rejects writes,
-comments, multi-statements, and tables outside `{novels, chapters, posts,
+comments, multi-statements, and tables outside `{papers, paper_sections, posts,
 usage_daily}`.
 
 ## Demo Mode

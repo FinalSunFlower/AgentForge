@@ -1,4 +1,6 @@
 .venv/
+.git.bak*/
+.git.bak-pre-rebuild/
 .pg-gate/
 __pycache__/
 *.py[cod]
@@ -11,6 +13,10 @@ agentforge.local.db
 *.db-shm
 *.db-wal
 .env
+_private/
+*.local.md
+/444.jpg
+/*.draft.jpg
 apps/web/node_modules/
 apps/web/node_modules.bak/
 apps/web/.next/

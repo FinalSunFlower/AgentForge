@@ -50,13 +50,13 @@ live-LLM routing accuracy. Hard suites are supposed to score lower.
 
 | Suite | Metric | Score |
 |---|---|---:|
-| Retrieval, 19 queries, MiniLM MaxSim (production) | recall@k / MRR | 1.00 / 1.00 |
-| Same 19 queries, MS MARCO MiniLM-L-6 ONNX CE (eval column) | recall@k / MRR | 1.00 / 0.96 |
+| Retrieval, 19 queries, MiniLM MaxSim (production) | recall@k / MRR | 1.00 / 0.97 |
+| Same 19 queries, MS MARCO MiniLM-L-6 ONNX CE (eval column) | recall@k / MRR | 1.00 / 0.95 |
 | Keyword / BM25, 19 queries | recall@k | 0.84 |
 | Zero-overlap MiniLM | recall@3 | 1.00 (keyword = 0.00) |
-| Hard retrieval (paraphrase + distractors) | keyword / CE / MaxSim recall | 0.00 / 0.83 / 1.00 |
+| Hard retrieval (paraphrase + distractors) | keyword / CE / MaxSim recall | 0.00 / 0.67 / 0.83 |
 | Tool routing, 24-task core | keyword / MiniLM success | 1.00 / 1.00 |
-| Hard routing (traps, ordered multi-step) | keyword / MiniLM success | 0.33 / 0.50 |
+| Hard routing (traps, ordered multi-step) | keyword / MiniLM success | 0.17 / 0.17 |
 | Needle + structured memory | extractive facts | pass |
 
 ```text
@@ -65,9 +65,9 @@ JWT login → thread/run → streamed function calling → policy gate
   → durable SQL events → SSE replay → usage / audit
 ```
 
-The required business slice is a **novel reader**: published chapters,
-bookshelves, and monotonic offline reading-progress sync. Feed, test billing,
-simulated notifications, and scientific tools are small supporting demos.
+The required business slice is a **literature reader**: published paper
+sections, topic collections, and monotonic offline annotation sync. Feed, test
+quota grants, and simulated notifications are small supporting demos.
 
 ## Tech stack
 
@@ -81,16 +81,20 @@ Versions are the constraints in [`pyproject.toml`](pyproject.toml) and
 | Persistence | SQLAlchemy 2.0 async | Same models on SQLite (`aiosqlite`) or PostgreSQL (`asyncpg`) |
 | Cache / streams | Redis 5 (optional) | Event-stream mirror, Demo Mode IP window |
 | Embeddings | fastembed + all-MiniLM-L6-v2 ONNX; MS MARCO MiniLM-L-6 cross-encoder ONNX (CPU) | Semantic retrieval and pairwise rerank (not a generative LLM) |
+| HTTP client | httpx | Core API → Runtime, MCP JSON-RPC |
 | Identity | PyJWT, Argon2id (`argon2-cffi`) | Access tokens; login-time PBKDF2 migration |
 | Observability | OpenTelemetry SDK + FastAPI/httpx instrumentation | Request / trace correlation headers |
+| Config | pydantic-settings | `Settings` classes read `.env` / process env |
 | Console | Next.js 16 (App Router), React 19, TypeScript 5.8 | Playground, tools, evals, architecture |
+| Contracts | `packages/contracts` | Shared `EventEnvelope` types |
+| Worker | Python loop (`services.worker`) | Outbox, usage, reservation expiry, simulated push |
 | Quality | pytest, ruff, mypy, pytest-asyncio, pgserver | Local + CI |
 | CI services | PostgreSQL 16, Redis 7 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 
-There is no Go service, no pnpm/Turborepo workspace, and no generated OpenAPI
-client. The console talks to Core API with `fetch` in
+The console talks to Core API with `fetch` in
 [`apps/web/app/lib/api.ts`](apps/web/app/lib/api.ts). Shared event types live in
-[`packages/contracts`](packages/contracts).
+[`packages/contracts`](packages/contracts). The stack is a small Python + Next.js
+tree that is easy to clone, test, and evaluate.
 
 ## Features
 
@@ -105,17 +109,19 @@ client. The console talks to Core API with `fetch` in
 | Memory | Extractive compression of structured facts | Implicit-prose recall |
 | Multi-agent | Four catalog agents; one-way sticky supervisor → specialist | Bidirectional handoff |
 | Tool governance | Versioned registry, JSON Schema, risk, timeout, approval, audit. `POST /v1/admin/mcp/sync` discovers MCP tools into **quarantined** rows | Auto-approve or skip schema hash |
-| Events | SQL event store, transactional outbox, optional Redis Stream; `tool.routing` and `tool.foresight` on live runs | ClickHouse analytics |
+| Events | SQL event store, transactional outbox, optional Redis Stream; `tool.routing` and `tool.foresight` on live runs | Hosted analytics warehouse |
 | Reconnect | SSE heartbeat + `Last-Event-ID`; SQL is authoritative | Exactly-once push |
 | Identity | JWT, Argon2id, refresh/API-key paths, plan limits | MFA / SSO |
 | Evals | 24-task keyword **and** MiniLM routers; hard trap/multi-step suite (scores may drop); 19-query retrieval including MaxSim and MS MARCO CE; harder paraphrase+distractor retrieval; needle; memory | Live-LLM routing accuracy |
-| Foresight | Deterministic tool-outcome simulator (calculator AST, MiniLM retrieval preview, SQL allowlist, sonar closed form) | Academic RAP / tabular world models (see `academic/`) |
+| Foresight | Deterministic tool-outcome simulator (calculator AST, MiniLM retrieval preview, SQL allowlist, arXiv catalog, plot stats) | Academic RAP / tabular world models (see `academic/`) |
 | Observability | OpenTelemetry SDK; console/OTLP opt-in | Hosted APM product |
+| Literature slice | Published papers/sections, topic collections, monotonic offline annotation sync | Social feed as the main product |
+| Quota reservations | `POST /v1/quota/reservations` + webhook dedup; token grants or plan renewals | Live payment provider |
 | Demo Mode | Global `UsageDaily` token budget, per-IP window, high-risk tools stripped from the **model** catalog | Production rate-limit product |
 
-Deterministic calculator / retrieval / science tools run without a GPU or a
-vendor SDK. Without `LLM_API_KEY` + `LLM_MODEL` the Runtime **fails closed**;
-it never fabricates an answer.
+Deterministic calculator, retrieval, arXiv catalog, and plot tools run without
+a GPU or a vendor SDK. Without `LLM_API_KEY` + `LLM_MODEL` the Runtime **fails
+closed**; it never fabricates an answer.
 
 ## Catalog agents
 
@@ -125,9 +131,9 @@ and are filtered out.
 
 | Console label | Slug | Role |
 |---|---|---|
-| Assistant | `default-assistant` | ReAct + built-in tools |
+| Writer | `academic-writer` | Citation-grounded drafting |
 | Supervisor | `supervisor` | One-way handoff to a specialist |
-| Science | `science-specialist` | Calculator, passive sonar, wind tunnel |
+| Code & data | `code-data-specialist` | Calculator, plots, read-only SQL |
 | Retrieval | `retrieval-specialist` | Hybrid search with citations |
 
 ## Built-in tools
@@ -136,8 +142,8 @@ and are filtered out.
 |---|---|---|---|
 | `calculator` | low | AST-allowlisted arithmetic | exact AST value |
 | `retrieval` | medium | BM25 + MiniLM + RRF + MaxSim; `passage_id` snippets | MiniLM vector preview |
-| `passive_sonar` | medium | 2D bearing least squares | closed-form source |
-| `wind_tunnel` | medium | 2D inviscid cylinder potential flow | grid-size estimate |
+| `arxiv_search` | medium | Closed arXiv-style catalog lookup | catalog preview |
+| `plot_generator` | medium | Series stats + SVG polyline | closed-form estimate |
 | `readonly_sql` | high | Allowlisted `SELECT` / `WITH` | schema validate only |
 | `intent_router` | low | Keyword counts + MiniLM intent prototypes | uninformative prior |
 | `handoff` | low | One-way sticky transfer to a specialist | uninformative prior |
@@ -160,19 +166,19 @@ the transcript; Trace lists the durable stream.
 | `GET /v1/status` | Public booleans: `runtime`, `llm_configured`, `demo_mode`. No secrets |
 | `GET /v1/evals/summary` | Checked-in snapshot by default; `?live=1` recomputes |
 
-Fresh databases seed **Harbor Field Notes** from the 19-query eval corpus so
-hybrid retrieval is not empty on first clone.
+Fresh databases seed **AgentForge Literature Notes** from the 19-query eval
+corpus so hybrid retrieval is not empty on first clone.
 
 ## Worker (optional)
 
 `python -m services.worker.app.main` loops: outbox relay (needs Redis), retry
-stuck `created` runs, usage rollup, pending-order expiry, simulated push
-dispatch, thread summaries. The first local playground run does not need it.
+stuck `created` runs, usage rollup, pending quota-reservation expiry, simulated
+push dispatch, thread summaries. The first local playground run does not need it.
 
-Supporting HTTP slices (not the agent contract): novels/chapters/bookshelf/
-monotonic reading progress; public feed + likes; idempotent checkout + webhook
-dedup; notification facts and simulated push. These exist so the runtime sits
-on a real product surface, not a toy chat stub.
+Supporting HTTP slices (not the agent contract): papers/sections/collections/
+monotonic annotation sync; public feed + likes; idempotent quota reservations +
+webhook dedup; notification facts and simulated push. These exist so the runtime
+sits on a real product surface, not a toy chat stub.
 
 ## Architecture
 
@@ -183,7 +189,7 @@ Next.js console  (apps/web, :3000)
         |
         v
  Core API  FastAPI :8100
- identity, threads, runs, novels, feed, checkout, evals summary
+ identity, threads, runs, papers, feed, quota reservations, evals summary
         |
         |  X-Runtime-Token  (RUNTIME_INTERNAL_TOKEN)
         v
@@ -209,8 +215,8 @@ Redis: `docker compose up`. Optional API containers: `docker compose --profile s
 Production profile: the same SQLAlchemy models on PostgreSQL + Redis
 (`DATABASE_URL`, `REDIS_URL`).
 
-Supporting demos (not the main product contract): public feed, test checkout
-with webhook dedup, in-app notification facts, scientific tools, MCP JSON-RPC
+Supporting demos (not the main product contract): public feed, test quota
+reservations with webhook dedup, in-app notification facts, and an MCP JSON-RPC
 client as an adapter boundary.
 
 ## Repository layout
@@ -219,13 +225,13 @@ client as an adapter boundary.
 pyproject.toml                     Python package + ruff/pytest
 .env.example                       keys the Settings classes actually read
 docker-compose.yml                 optional Postgres 16 + Redis 7 (same as CI)
-services/core_api/                 identity, novels, events, outbox, Demo Mode
+services/core_api/                 identity, papers, annotation sync, quota reservations, events, outbox, Demo Mode
 services/agent_runtime/app/
   executor.py                      ReAct loop, routing emit, simulator, grounding, usage
   hybrid_retrieval.py              BM25 + MiniLM + RRF + late-interaction MaxSim
   cross_encoder.py                 off-the-shelf MS MARCO MiniLM-L-6 ONNX (eval column)
   embedding_router.py              MiniLM cosine tool/specialist/intent routing
-  science_tools.py                 sonar, wind tunnel, SQL allowlist, intent_router
+  research_tools.py                arXiv catalog, plot generator, SQL allowlist, intent_router
   mcp.py                           MCP JSON-RPC client + catalog wrappers
   foresight.py                     tool-outcome simulator: AST / vector preview / SQL validate (not RAP)
   grounding.py                     citation overlap check
@@ -235,7 +241,7 @@ services/agent_runtime/app/
   policy.py                        schema, depth, high-risk approval gate
   eval_harness.py                  keyword vs MiniLM routers, hard suites, retrieval, needle
   tools.py / provider.py
-services/worker/app/               outbox, usage, dispatch retry, simulated delivery
+services/worker/app/               outbox, usage, reservation expiry, dispatch retry, simulated delivery
 packages/contracts/                EventEnvelope and event types
 apps/web/                          Next.js console: /, /tools, /evals, /architecture
 apps/mobile_contract/              fail-closed privacy scan CLI (tests + `privacy_gate.py`)
@@ -323,9 +329,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | `/evals` | Public | `GET /v1/evals/summary` — MiniLM, MaxSim, MS MARCO CE, hard suites, needle, memory |
 | `/architecture` | Public | Process diagram and known boundaries |
 
-Presets: calculator, hybrid retrieval, supervisor → science, extractive memory.
-Signed-in users can also fire the idempotent checkout demo. Token deltas stay
-in the transcript; durable events go to Trace.
+Presets: calculator, hybrid retrieval, supervisor → code-data, extractive memory.
+Signed-in users can also fire the idempotent quota-reservation demo
+(`POST /v1/quota/reservations`). Token deltas stay in the transcript; durable
+events go to Trace.
 
 ## Verification
 
@@ -349,7 +356,7 @@ Deployed smoke (`scripts/smoke_test_deployed.py`) is a separate workflow.
 The job is **skipped (grey)** until `SMOKE_BASE_URL` is set as a variable or
 secret — that is not a green success.
 
-PostgreSQL outbox-claim and first-write progress tests start real Postgres via
+PostgreSQL outbox-claim and first-write annotation-sync tests start real Postgres via
 `pgserver` when `DATABASE_URL` is not already `postgresql+asyncpg`. They force
 two open transactions to overlap with `asyncio.Barrier` after both `SELECT`s.
 `docker-compose.yml` matches the CI services.
@@ -364,7 +371,7 @@ Print eval numbers without a live model (same file the console snapshot uses):
 
 - Provider cost uses configured per-million-token rates. Zero rates are for
   free/local providers, not monetary production measurements.
-- Reading progress uses SQLite writer serialization or PostgreSQL `FOR UPDATE`.
+- Annotation progress sync uses SQLite writer serialization or PostgreSQL `FOR UPDATE`.
 - Extractive compression keeps structured facts. It does not guarantee recall
   of implicit prose such as “I don't like meetings on Fridays”.
 - The 24-task and supervisor scores include a deterministic keyword-router
@@ -381,23 +388,24 @@ Print eval numbers without a live model (same file the console snapshot uses):
 - MCP discovery writes quarantined registry rows. Execution requires admin
   approval and an explicit attach to an agent.
 - Runtime `tool.foresight` is a reproducible tool-outcome simulator:
-  calculator AST, MiniLM retrieval preview, SQL allowlist validation, sonar
-  closed form. It is not RAP and not the academic tabular world-model package.
+  calculator AST, MiniLM retrieval preview, SQL allowlist validation, arXiv
+  catalog preview, and plot statistics. It is not the academic tabular
+  world-model package.
 - `intent_router` is MiniLM cosine over frozen intent prototypes with a
   keyword fallback (`method: minilm_embedding_with_keyword_fallback`), not a
   live-LLM classifier.
 - The DAG scheduler batches independent reads and isolates writes / argument
   dependencies. It is not a distributed workflow engine.
 - `apps/mobile_contract` is a fail-closed source scan for secrets and sensor
-  keywords. There is no iOS/Android app.
+  keywords.
 - Handoff is one-way and sticky. After transfer, the thread stays on that
   specialist.
 - Demo Mode reuses `UsageDaily` + `budget_exceeded`. The daily token budget is
   an eventually consistent soft limit: concurrent runs can spend a little past
   `DAILY_TOKEN_BUDGET`.
-- Intentionally deferred: Go services, Kubernetes/Helm, S3, ClickHouse,
-  Capacitor/RN, real payment settlement, APNs/FCM, file analysis, UUID-pivot
-  scale recall, and a locally trained reranker.
+- Quota reservations (`POST /v1/quota/reservations`) are an idempotent token
+  grant / plan-renewal demo with webhook de-duplication. They are not a live
+  payment provider.
 
 ## Deploy (optional)
 
@@ -463,8 +471,8 @@ and an output summary. Calculator expressions use an AST allowlist. Read-only
 SQL rejects writes, comments, multi-statements, and non-allowlisted tables.
 
 TLS termination, secret-manager integration, MFA, SSRF/IP validation, file
-sandboxing, real payment signatures, and real push providers are deployment
-extensions, not completed features.
+sandboxing, real quota-provider signatures, and real push providers are
+deployment extensions, not completed features.
 
 OpenTelemetry is wired (FastAPI/httpx instrumentation). Console spans and OTLP
 export are opt-in via `OTEL_CONSOLE_EXPORTER` / `OTEL_EXPORTER_OTLP_ENDPOINT`.

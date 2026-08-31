@@ -47,11 +47,13 @@ async def test_foresight_gate_uses_candidate_variance() -> None:
     assert preview_calculator("1 / 0") == 0.0
     ok = simulate_calculator({"expression": "12 * (3 + 4)"})
     assert ok.ok is True and ok.kind == "ast" and ok.predicted["value"] == 84.0
-    denied = simulate_sql({"query": "DELETE FROM novels"})
+    denied = simulate_sql({"query": "DELETE FROM papers"})
     assert denied.ok is False and denied.kind == "sql_validate"
-    allowed = simulate_sql({"query": "SELECT title FROM novels LIMIT 5"})
+    allowed = simulate_sql({"query": "SELECT title FROM papers LIMIT 5"})
     assert allowed.ok is True and allowed.predicted["would_execute"] is True
-    preview = simulate_retrieval({"query": "undo purchase", "limit": 3}, EVAL_CORPUS)
+    preview = simulate_retrieval(
+        {"query": "quote grounded summary rule", "limit": 3}, EVAL_CORPUS
+    )
     assert preview.ok is True and preview.kind == "vector_preview"
     assert preview.predicted["top_ids"]
     generic = simulate_tool("unknown_tool", {})

@@ -34,13 +34,13 @@ def test_minilm_vector_path_recovers_zero_overlap_semantics() -> None:
     gap = evaluate_zero_overlap(k=3)
     assert gap["vector"]["recall_at_k"] > gap["keyword"]["recall_at_k"]
     assert gap["hybrid"]["recall_at_k"] >= gap["vector"]["recall_at_k"]
-    hits = retrieve("undo purchase", EVAL_CORPUS, limit=1, mode="vector")
-    assert hits[0].passage.passage_id == "p-refund"
+    hits = retrieve("quote grounded summary rule", EVAL_CORPUS, limit=1, mode="vector")
+    assert hits[0].passage.passage_id == "p-citation"
 
 
 def test_lexical_query_keeps_exact_match_first() -> None:
-    hits = retrieve("amber tea ceremony", EVAL_CORPUS, limit=3, mode="bm25")
-    assert hits[0].passage.passage_id == "p-tea"
+    hits = retrieve("cited passage_id", EVAL_CORPUS, limit=3, mode="bm25")
+    assert hits[0].passage.passage_id == "p-citation"
 
 
 def test_hashed_embedding_is_lexical_ablation_only() -> None:
@@ -53,14 +53,16 @@ def test_hashed_embedding_is_lexical_ablation_only() -> None:
     assert semantic["vector"]["recall_at_k"] == 1.0
     assert hashed["vector"]["recall_at_k"] < semantic["vector"]["recall_at_k"]
     assert (
-        retrieve("undo purchase", EVAL_CORPUS, limit=1, mode="vector")[0].passage.passage_id
-        == "p-refund"
+        retrieve("quote grounded summary rule", EVAL_CORPUS, limit=1, mode="vector")[
+            0
+        ].passage.passage_id
+        == "p-citation"
     )
 
 
 def test_cross_encoder_ranks_lexical_match_first() -> None:
-    hits = retrieve("amber tea ceremony", EVAL_CORPUS, limit=1, mode="hybrid_cross_encoder")
-    assert hits[0].passage.passage_id == "p-tea"
+    hits = retrieve("cited passage_id", EVAL_CORPUS, limit=1, mode="hybrid_cross_encoder")
+    assert hits[0].passage.passage_id == "p-citation"
     assert retrieve.__kwdefaults__ is not None
     assert retrieve.__kwdefaults__["mode"] == "hybrid_late_interaction"
 

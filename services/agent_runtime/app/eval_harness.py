@@ -50,22 +50,18 @@ def keyword_route(prompt: str) -> list[tuple[str, dict[str, Any]]]:
     if _contains_any(prompt, ("classify", "intent", "adapter")):
         return [("intent_router", {"text": prompt})]
     if _contains_any(prompt, ("select ", " sql", "sql ", "analytics")):
-        return [("readonly_sql", {"query": "SELECT title FROM novels LIMIT 5"})]
-    if _contains_any(prompt, ("bearing", "sonar", "triangulate")) and not _contains_any(
-        prompt, ("search", "retrieve", "find", "look up")
+        return [("readonly_sql", {"query": "SELECT title FROM papers LIMIT 5"})]
+    if _contains_any(prompt, ("arxiv literature catalog", "literature catalog", "use the arxiv")) and not _contains_any(
+        prompt, ("search published", "retrieve", "find", "look up")
     ):
-        sensors = [
-            {"x": 0.0, "y": 0.0, "bearing_deg": 45.0},
-            {"x": 10.0, "y": 0.0, "bearing_deg": 135.0},
-        ]
-        return [("passive_sonar", {"sensors": sensors})]
-    if _contains_any(prompt, ("wind tunnel", "cylinder", "potential flow")) and not _contains_any(
+        return [("arxiv_search", {"query": prompt[:200], "limit": 3})]
+    if _contains_any(prompt, ("plot", "polyline", "standard deviation", "numeric series")) and not _contains_any(
         prompt, ("search", "retrieve", "find", "look up")
     ):
         return [
             (
-                "wind_tunnel",
-                {"velocity_mps": 20.0, "angle_deg": 0.0, "cylinder_radius_m": 1.0},
+                "plot_generator",
+                {"xs": [0.0, 1.0, 2.0], "ys": [1.0, 2.0, 3.0], "title": "series"},
             )
         ]
     if (
@@ -133,20 +129,20 @@ EVAL_TASKS: list[EvalTask] = [
         {"retrieval": {}},
     ),
     EvalTask(
-        "sonar-bearing",
-        "Triangulate the sonar bearing from two sensors",
-        ["passive_sonar"],
-        {"passive_sonar": {}},
+        "arxiv-search",
+        "Search the arXiv literature catalog for ReAct tool traces",
+        ["arxiv_search"],
+        {"arxiv_search": {}},
     ),
     EvalTask(
-        "wind-tunnel",
-        "Run the wind tunnel cylinder potential flow calculation",
-        ["wind_tunnel"],
-        {"wind_tunnel": {"velocity_mps": 20.0}},
+        "plot-series",
+        "Plot the numeric series and report standard deviation",
+        ["plot_generator"],
+        {"plot_generator": {}},
     ),
     EvalTask(
         "sql-select",
-        "Run a read-only SQL analytics query on novels",
+        "Run a read-only SQL analytics query on papers",
         ["readonly_sql"],
         {"readonly_sql": {}},
     ),
@@ -157,8 +153,8 @@ EVAL_TASKS: list[EvalTask] = [
         {"intent_router": {}},
     ),
     EvalTask(
-        "intent-science",
-        "Classify adapter for a sonar bearing request",
+        "intent-arxiv",
+        "Classify adapter for an arXiv literature catalog request",
         ["intent_router"],
         {"intent_router": {}},
     ),
@@ -180,10 +176,10 @@ EVAL_TASKS: list[EvalTask] = [
         ["retrieval"],
         {"retrieval": {}},
     ),
-    EvalTask("find-tea", "Find the amber tea ceremony chapter", ["retrieval"], {"retrieval": {}}),
+    EvalTask("find-citation", "Find the extractive citation alignment section", ["retrieval"], {"retrieval": {}}),
     EvalTask(
-        "find-sonar-log",
-        "Search the harbor observer angle measurement",
+        "find-arxiv-note",
+        "Search the ReAct preprint interleaving note",
         ["retrieval"],
         {"retrieval": {}},
     ),
@@ -202,21 +198,21 @@ EVAL_TASKS: list[EvalTask] = [
     EvalTask("empty-chit-chat", "Hello, how are you today?", [], {}, "completed"),
     EvalTask(
         "sql-approval-path",
-        "SELECT title FROM novels for analytics",
+        "SELECT title FROM papers for analytics",
         ["readonly_sql"],
         {"readonly_sql": {}},
     ),
     EvalTask(
-        "wind-only",
-        "Compute cylinder pressure in the wind tunnel",
-        ["wind_tunnel"],
-        {"wind_tunnel": {}},
+        "plot-only",
+        "Plot a numeric series polyline",
+        ["plot_generator"],
+        {"plot_generator": {}},
     ),
     EvalTask(
-        "sonar-only",
-        "Use passive sonar to triangulate a source",
-        ["passive_sonar"],
-        {"passive_sonar": {}},
+        "arxiv-only",
+        "Use the arXiv literature catalog",
+        ["arxiv_search"],
+        {"arxiv_search": {}},
     ),
     EvalTask(
         "intent-data",
@@ -230,10 +226,10 @@ EVAL_TASKS: list[EvalTask] = [
 
 HARD_TASKS: list[EvalTask] = [
     EvalTask(
-        "trap-calc-means-sonar",
-        "Calculate the sonar source position with the science tool, not the arithmetic calculator",
-        ["passive_sonar"],
-        {"passive_sonar": {}},
+        "trap-calc-means-arxiv",
+        "Look up the ReAct preprint in the arXiv literature catalog, not the arithmetic calculator",
+        ["arxiv_search"],
+        {"arxiv_search": {}},
     ),
     EvalTask(
         "trap-search-not-calc",
@@ -248,14 +244,14 @@ HARD_TASKS: list[EvalTask] = [
         {"calculator": {"expression": "2 + 3"}, "retrieval": {}},
     ),
     EvalTask(
-        "multi-intent-then-sonar",
-        "Classify this sonar request, then triangulate the bearing",
-        ["intent_router", "passive_sonar"],
+        "multi-intent-then-arxiv",
+        "Classify this arXiv literature catalog request, then search the catalog",
+        ["intent_router", "arxiv_search"],
         {"intent_router": {}},
     ),
     EvalTask(
         "paraphrase-void-order",
-        "Look up how a customer voids finished store order",
+        "Look up how third-party model cards stay Apache and no weight files ship",
         ["retrieval"],
         {"retrieval": {}},
     ),
@@ -397,7 +393,11 @@ def _fallback_args(name: str, prompt: str) -> dict[str, Any]:
     if name == "intent_router":
         return {"text": prompt}
     if name == "readonly_sql":
-        return {"query": "SELECT title FROM novels LIMIT 5"}
+        return {"query": "SELECT title FROM papers LIMIT 5"}
+    if name == "arxiv_search":
+        return {"query": prompt[:200], "limit": 3}
+    if name == "plot_generator":
+        return {"xs": [0.0, 1.0, 2.0], "ys": [1.0, 2.0, 3.0], "title": "series"}
     if name == "handoff":
         specialist = select_specialist(prompt) or "retrieval"
         return {"specialist": specialist, "reason": f"{specialist}_task", "brief": prompt[:400]}
@@ -477,10 +477,10 @@ def run_hard_embedding_eval() -> tuple[list[TaskTrace], dict[str, Any]]:
 
 def supervisor_route(prompt: str) -> list[tuple[str, dict[str, Any]]]:
     if _contains_any(
-        prompt, ("calculate", "compute", "sonar", "bearing", "wind tunnel", "cylinder")
+        prompt, ("calculate", "compute", "plot", "sql", "series")
     ):
         return [
-            ("handoff", {"specialist": "science", "reason": "science_task", "brief": prompt[:400]})
+            ("handoff", {"specialist": "code_data", "reason": "code_data_task", "brief": prompt[:400]})
         ]
     if _contains_any(prompt, ("search", "retrieve", "find", "look up", "who wrote")):
         return [
@@ -494,16 +494,16 @@ def supervisor_route(prompt: str) -> list[tuple[str, dict[str, Any]]]:
 
 SUPERVISOR_TASKS: list[EvalTask] = [
     EvalTask(
-        "handoff-science-calc",
+        "handoff-code-calc",
         "Calculate 12 * (3 + 4)",
         ["handoff"],
-        {"handoff": {"specialist": "science"}},
+        {"handoff": {"specialist": "code_data"}},
     ),
     EvalTask(
-        "handoff-science-sonar",
-        "Triangulate the sonar bearing from two sensors",
+        "handoff-code-plot",
+        "Plot the numeric series and report standard deviation",
         ["handoff"],
-        {"handoff": {"specialist": "science"}},
+        {"handoff": {"specialist": "code_data"}},
     ),
     EvalTask(
         "handoff-retrieval",

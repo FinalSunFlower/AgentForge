@@ -31,7 +31,7 @@ def test_supervisor_eval_routes_to_specialists() -> None:
     assert summary["eval_kind"] == "deterministic_keyword_router"
     assert summary["claim"] == KEYWORD_ROUTER_CLAIM
     assert summary["task_success_rate"] == 1.0
-    assert {item.predicted_args[0]["specialist"] for item in traces} == {"science", "retrieval"}
+    assert {item.predicted_args[0]["specialist"] for item in traces} == {"code_data", "retrieval"}
 
 
 @pytest.mark.asyncio
@@ -71,7 +71,7 @@ async def test_executor_handoff_switches_tools_and_policy() -> None:
                         ToolCallDelta(
                             "tc-h",
                             "handoff",
-                            '{"specialist":"science","reason":"math","brief":"Calculate 2 + 3"}',
+                            '{"specialist":"code_data","reason":"math","brief":"Calculate 2 + 3"}',
                         )
                     ]
                 )
@@ -91,10 +91,10 @@ async def test_executor_handoff_switches_tools_and_policy() -> None:
         events = list(await session.scalars(select(RunEvent).where(RunEvent.run_id == run_id)))
         assert any(event.event_type == EventType.AGENT_HANDOFF.value for event in events)
         thread = await session.get(Thread, thread_id)
-        specialist = await session.scalar(select(Agent).where(Agent.slug == "science-specialist"))
+        specialist = await session.scalar(select(Agent).where(Agent.slug == "code-data-specialist"))
         assert thread is not None and specialist is not None
         assert thread.agent_id == specialist.id
-        assert SPECIALISTS["science"].tools
+        assert SPECIALISTS["code_data"].tools
 
         session.add(Message(thread_id=thread.id, role=MessageRole.USER, content="Calculate 4 + 1"))
         follow = Run(thread_id=thread.id)

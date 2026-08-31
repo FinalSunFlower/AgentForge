@@ -4,15 +4,15 @@ import pytest
 
 from services.agent_runtime.app.tools import retrieval
 from services.core_api.app.db import SessionFactory, init_db
-from services.core_api.app.models import Chapter, Novel
+from services.core_api.app.models import Paper, PaperSection
 
 
 @pytest.mark.asyncio
-async def test_retrieval_returns_only_published_novel_sources() -> None:
+async def test_retrieval_returns_only_published_paper_sources() -> None:
     await init_db()
     async with SessionFactory() as session:
         session.add(
-            Novel(
+            Paper(
                 title=f"Research {uuid4()}",
                 author_name="Author",
                 description="agent planning notes",
@@ -21,7 +21,7 @@ async def test_retrieval_returns_only_published_novel_sources() -> None:
         await session.commit()
     result = await retrieval({"query": "planning", "limit": 5})
     assert result["results"]
-    assert result["results"][0]["kind"] == "novel"
+    assert result["results"][0]["kind"] == "paper"
     assert result["results"][0]["source_id"]
     assert result["results"][0]["passage_id"]
     assert result["method"] == "hybrid_rrf_late_interaction"
@@ -30,23 +30,23 @@ async def test_retrieval_returns_only_published_novel_sources() -> None:
 
 
 @pytest.mark.asyncio
-async def test_retrieval_excludes_private_or_unpublished_chapters() -> None:
+async def test_retrieval_excludes_private_or_unpublished_sections() -> None:
     async with SessionFactory() as session:
-        unpublished = Novel(title=f"Draft {uuid4()}", author_name="Author", description="needle")
-        private_novel = Novel(title=f"Private {uuid4()}", author_name="Author", description="other")
-        session.add_all([unpublished, private_novel])
+        unpublished = Paper(title=f"Draft {uuid4()}", author_name="Author", description="needle")
+        private_paper = Paper(title=f"Private {uuid4()}", author_name="Author", description="other")
+        session.add_all([unpublished, private_paper])
         await session.flush()
         session.add_all(
             [
-                Chapter(
-                    novel_id=unpublished.id,
+                PaperSection(
+                    paper_id=unpublished.id,
                     number=1,
                     title="Draft",
                     content="needle",
                     is_published=True,
                 ),
-                Chapter(
-                    novel_id=private_novel.id,
+                PaperSection(
+                    paper_id=private_paper.id,
                     number=1,
                     title="Private",
                     content="needle",

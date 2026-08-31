@@ -1,6 +1,6 @@
 {
   "disclaimer": "Retrieval and needle numbers are computed from the checked-in corpus and extractive compressor. Agent/supervisor task_success_rate values are keyword-router and MiniLM-embedding-router baselines, not live-LLM routing. hybrid_cross_encoder is the off-the-shelf MS MARCO MiniLM-L-6 ONNX model (no local training). The hard suites are trap/paraphrase/multi-step tasks and are expected to score lower.",
-  "generated_at": "2026-08-31T01:44:44.759182+00:00",
+  "generated_at": "2026-08-31T04:46:42.994083+00:00",
   "hard_retrieval": {
     "bm25": {
       "mrr": 0.0,
@@ -8,24 +8,24 @@
       "recall_at_k": 0.0
     },
     "hybrid": {
-      "mrr": 0.9167,
+      "mrr": 0.5278,
       "queries": 6.0,
-      "recall_at_k": 1.0
+      "recall_at_k": 0.8333
     },
     "hybrid_cross_encoder": {
+      "mrr": 0.5,
+      "queries": 6.0,
+      "recall_at_k": 0.6667
+    },
+    "hybrid_late_interaction": {
       "mrr": 0.75,
       "queries": 6.0,
       "recall_at_k": 0.8333
     },
-    "hybrid_late_interaction": {
-      "mrr": 1.0,
-      "queries": 6.0,
-      "recall_at_k": 1.0
-    },
     "hybrid_rerank": {
-      "mrr": 0.9167,
+      "mrr": 0.5278,
       "queries": 6.0,
-      "recall_at_k": 1.0
+      "recall_at_k": 0.8333
     },
     "keyword": {
       "mrr": 0.0,
@@ -33,9 +33,9 @@
       "recall_at_k": 0.0
     },
     "vector": {
-      "mrr": 1.0,
+      "mrr": 0.6389,
       "queries": 6.0,
-      "recall_at_k": 1.0
+      "recall_at_k": 0.8333
     }
   },
   "memory": {
@@ -58,22 +58,22 @@
       "recall_at_k": 0.8421
     },
     "hybrid": {
-      "mrr": 1.0,
+      "mrr": 0.9737,
       "queries": 19.0,
       "recall_at_k": 1.0
     },
     "hybrid_cross_encoder": {
-      "mrr": 0.9649,
+      "mrr": 0.9474,
       "queries": 19.0,
       "recall_at_k": 1.0
     },
     "hybrid_late_interaction": {
-      "mrr": 1.0,
+      "mrr": 0.9737,
       "queries": 19.0,
       "recall_at_k": 1.0
     },
     "hybrid_rerank": {
-      "mrr": 1.0,
+      "mrr": 0.9737,
       "queries": 19.0,
       "recall_at_k": 1.0
     },
@@ -83,7 +83,7 @@
       "recall_at_k": 0.8421
     },
     "vector": {
-      "mrr": 1.0,
+      "mrr": 0.9737,
       "queries": 19.0,
       "recall_at_k": 1.0
     }
@@ -104,11 +104,11 @@
       "avg_steps": 2.0,
       "claim": "Trap, paraphrase, and ordered multi-tool tasks. Keyword and MiniLM routers are expected to drop. Not live-LLM routing.",
       "eval_kind": "minilm_embedding_router",
-      "param_accuracy": 1.0,
+      "param_accuracy": 0.8333,
       "suite": "hard",
-      "task_success_rate": 0.5,
+      "task_success_rate": 0.1667,
       "tasks": 6.0,
-      "tool_selection_accuracy": 0.5
+      "tool_selection_accuracy": 0.1667
     },
     "hard_keyword": {
       "avg_cost_micros": 0.0,
@@ -117,9 +117,9 @@
       "eval_kind": "deterministic_keyword_router",
       "param_accuracy": 0.8333,
       "suite": "hard",
-      "task_success_rate": 0.3333,
+      "task_success_rate": 0.1667,
       "tasks": 6.0,
-      "tool_selection_accuracy": 0.3333
+      "tool_selection_accuracy": 0.1667
     },
     "keyword": {
       "avg_cost_micros": 0.0,
@@ -160,22 +160,22 @@
       "recall_at_k": 0.0
     },
     "hybrid": {
-      "mrr": 1.0,
+      "mrr": 0.8333,
       "queries": 3.0,
       "recall_at_k": 1.0
     },
     "hybrid_cross_encoder": {
-      "mrr": 0.7778,
+      "mrr": 0.6667,
       "queries": 3.0,
       "recall_at_k": 1.0
     },
     "hybrid_late_interaction": {
-      "mrr": 1.0,
+      "mrr": 0.8333,
       "queries": 3.0,
       "recall_at_k": 1.0
     },
     "hybrid_rerank": {
-      "mrr": 1.0,
+      "mrr": 0.8333,
       "queries": 3.0,
       "recall_at_k": 1.0
     },
@@ -186,7 +186,7 @@
     },
     "minilm_recall_at_3": 1.0,
     "vector": {
-      "mrr": 1.0,
+      "mrr": 0.8333,
       "queries": 3.0,
       "recall_at_k": 1.0
     }

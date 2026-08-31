@@ -55,13 +55,13 @@ class ApiKeyCreated(ApiKeyRead):
     key: str
 
 
-class NovelCreate(StrictModel):
+class PaperCreate(StrictModel):
     title: str = Field(min_length=1, max_length=200)
     author_name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=20_000)
 
 
-class NovelRead(StrictModel):
+class PaperRead(StrictModel):
     id: UUID
     title: str
     author_name: str
@@ -69,7 +69,7 @@ class NovelRead(StrictModel):
     status: str
 
 
-class ChapterCreate(StrictModel):
+class SectionCreate(StrictModel):
     number: int = Field(ge=1)
     title: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=500_000)
@@ -77,9 +77,9 @@ class ChapterCreate(StrictModel):
     publish_at: datetime | None = None
 
 
-class ChapterRead(StrictModel):
+class SectionRead(StrictModel):
     id: UUID
-    novel_id: UUID
+    paper_id: UUID
     number: int
     title: str
     content: str
@@ -89,41 +89,41 @@ class ChapterRead(StrictModel):
     publish_at: datetime | None
 
 
-class ReadingProgressUpdate(StrictModel):
-    chapter_id: UUID
-    chapter_number: int = Field(ge=1)
+class AnnotationSyncUpdate(StrictModel):
+    section_id: UUID
+    section_number: int = Field(ge=1)
     progress_percent: int = Field(ge=0, le=100)
     paragraph_index: int = Field(ge=0)
     client_updated_at: datetime
 
 
-class ReadingProgressRead(StrictModel):
+class AnnotationSyncRead(StrictModel):
     accepted: bool
     stale_reason: str | None = None
-    chapter_id: UUID | None = None
-    chapter_number: int | None = None
+    section_id: UUID | None = None
+    section_number: int | None = None
     progress_percent: int | None = None
     paragraph_index: int | None = None
 
 
-class BookshelfRead(StrictModel):
-    novel_id: UUID
+class CollectionRead(StrictModel):
+    paper_id: UUID
     created_at: datetime
 
 
-class CheckoutRequest(StrictModel):
-    type: str = Field(pattern="^(subscription|credits)$")
+class QuotaGrantRequest(StrictModel):
+    type: str = Field(pattern="^(plan|tokens)$")
     product_ref: str = Field(min_length=1, max_length=100)
     amount: int = Field(gt=0, le=10_000_000)
-    currency: str = Field(default="usd", min_length=3, max_length=3)
+    unit: str = Field(default="token", min_length=3, max_length=16)
 
 
-class OrderRead(StrictModel):
+class ReservationRead(StrictModel):
     id: UUID
     type: str
     product_ref: str
     amount: int
-    currency: str
+    unit: str
     status: str
     expires_at: datetime
 
@@ -137,10 +137,10 @@ class EntitlementRead(StrictModel):
     period_end: datetime
 
 
-class WebhookPayment(StrictModel):
+class WebhookQuotaGrant(StrictModel):
     event_id: str = Field(min_length=1, max_length=200)
-    order_id: UUID
-    provider_tx_id: str = Field(min_length=1, max_length=200)
+    reservation_id: UUID
+    provider_ref: str = Field(min_length=1, max_length=200)
     success: bool
 
 

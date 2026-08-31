@@ -7,6 +7,7 @@ name = "agentforge"
 version = "0.1.0"
 description = "A controllable tool-augmented agent platform"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115,<1.0",

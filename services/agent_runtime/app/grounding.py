@@ -6,7 +6,7 @@ from typing import Any
 from .hybrid_retrieval import tokenize
 
 _SENTENCE_RE = re.compile(r"(?<=[.!?。！？])\s+")
-_PASSAGE_ID_RE = re.compile(r"\b(?:p-[\w-]+|(?:novel|chapter):[0-9a-f-]+:\d+)\b", re.IGNORECASE)
+_PASSAGE_ID_RE = re.compile(r"\b(?:p-[\w-]+|(?:paper|section):[0-9a-f-]+:\d+)\b", re.IGNORECASE)
 _DEFAULT_THRESHOLD = 0.35
 
 
