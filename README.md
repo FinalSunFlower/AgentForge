@@ -471,5 +471,6 @@ export are opt-in via `OTEL_CONSOLE_EXPORTER` / `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
 ## License
 
-[MIT](LICENSE). See [CONTRIBUTING.md](CONTRIBUTING.md) and
-[SECURITY.md](SECURITY.md).
+Original source is [MIT](LICENSE). Pretrained checkpoints, papers, and
+pip/npm dependencies keep their own terms; see [THIRD_PARTY.md](THIRD_PARTY.md).
+Also [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

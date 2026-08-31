@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "agentforge-academic"
 version = "0.1.0"
 description = "Reproducible routed lightweight world-model planning experiments"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = ["numpy>=2.0,<3.0", "PyYAML>=6.0,<7.0", "matplotlib>=3.9,<4.0"]
 
